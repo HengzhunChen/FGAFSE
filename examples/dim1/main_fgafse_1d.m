@@ -29,7 +29,7 @@ cd ./examples/dim1
 % alpha = [1.875, 1.9, 1.925, 1.95, 1.975];
 % vepsExp = [-6, -7, -8, -9, -10];
 % figureName = './L2err_alpha_11frac6_to_2.png';
-% error_decay_1d(alpha, vepsExp, right_x,  final_time, @initWave, @potential, figureName);
+% error_decay_1d(alpha, vepsExp, right_x, final_time, @initWave, @potential, figureName);
 % for alphaIdx = alpha
 %     for expIndex = vepsExp
 %         % check whether the trajectory of P go through its zero points
@@ -44,7 +44,7 @@ final_time = 0.5;
 alpha = [1.1, 1.3, 1.5, 1.7, 1.9];
 vepsExp = [-6, -7, -8, -9, -10];
 figureName = './L2err_alpha_1to2.png';
-error_decay_1d(alpha, vepsExp, right_x,  final_time, @initWave, @potential, figureName);
+error_decay_1d(alpha, vepsExp, right_x, final_time, @initWave, @potential, figureName);
 for alphaIdx = alpha
     for expIndex = vepsExp
         % check whether the trajectory of P go through its zero points
@@ -59,36 +59,12 @@ end
 % final_time = 0.5;
 % alpha = [1.1, 1.3, 1.5, 1.7, 1.9];
 % vepsExp = [-6, -7, -8, -9, -10];
+
 % figureName = './L2err_alpha_1to2_k_2.png';
-% error_decay_1d(alpha, vepsExp, right_x,  final_time, @initWave, @potential, figureName);
-% for alphaIdx = alpha
-%     for expIndex = vepsExp
-%         % check whether the trajectory of P go through its zero points
-%         fprintf("alpha = %f, vepsExp = %d\n", alphaIdx, expIndex);
-%         count_zero_P_1d(alphaIdx, final_time, expIndex, right_x, @initWave, @potential);
-%     end
-% end
-
-% right_x = 2;
-% final_time = 0.5;
-% alpha = [1.1, 1.3, 1.5, 1.7, 1.9];
-% vepsExp = [-6, -7, -8, -9, -10];
 % figureName = './L2err_alpha_1to2_k_11/6.png';
-% error_decay_1d(alpha, vepsExp, right_x,  final_time, @initWave, @potential, figureName);
-% for alphaIdx = alpha
-%     for expIndex = vepsExp
-%         % check whether the trajectory of P go through its zero points
-%         fprintf("alpha = %f, vepsExp = %d\n", alphaIdx, expIndex);
-%         count_zero_P_1d(alphaIdx, final_time, expIndex, right_x, @initWave, @potential);
-%     end
-% end
-
-% right_x = 2;
-% final_time = 0.5;
-% alpha = [1.1, 1.3, 1.5, 1.7, 1.9];
-% vepsExp = [-6, -7, -8, -9, -10];
 % figureName = './L2err_alpha_1to2_delta_1e-8.png';
-% error_decay_1d(alpha, vepsExp, right_x,  final_time, @initWave, @potential, figureName);
+
+% error_decay_1d(alpha, vepsExp, right_x, final_time, @initWave, @potential, figureName);
 % for alphaIdx = alpha
 %     for expIndex = vepsExp
 %         % check whether the trajectory of P go through its zero points

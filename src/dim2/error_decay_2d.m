@@ -1,21 +1,21 @@
-function error_decay_1d(alpha, vepsExp, right_x, finalTime, initWave, potential, figName)
-% ERROR_DECAY_1D function to analyze the error decay rate of FGA for 1-dim
+function error_decay_2d(alpha, vepsExp, right_x, finalTime, initWave, potential, figName)
+% ERROR_DECAY_2D function to analyze the error decay rate of FGA for 2-dim
 % fractional Schrodinger equation with high-frequency wave, use TSSA method as
 % ground state.
 %    Inputs:  
 %        alpha     -- order of fractional operator
 %        vepsExp   -- exponent of veps (scaled Planck constant), 
 %                     veps = 2 ^ vepsExp
-%        right_x   -- right endpoint of domain of x
+%        right_x   -- right endpoint of domain of both x1 and x2
 %                     left endpoint of domain of x is 0
 %        finalTime -- final time of evolution
 %        initWave  -- function handle for initial wavefunction
 %                     u0 = initWavefun(x, veps)
 %        potential -- function handle of potential 
-%                     [V, DV, D2V] = potential(Q)
+%                     [V, DV, D2V] = potential(Q1, Q2)
 %        figName   -- figure name for plot of L2 error decay curve
 %
-%    See also FGA1d, TSSA1d.
+%    See also FGA2d, TSSA2d.
 
 %  Copyright (c) 2024 Hengzhun Chen, Fudan University,
 %                     Lihui Chai, Sun Yat-sen University.
@@ -87,65 +87,60 @@ for i = 1 : nalpha
 
         % -------------------------------------------------
         % Solver computation
-        % -------------------------------------------------
-
+        % -------------------------------------------------        
         % FGA method, display error of initial decompsition
-        [w, x_w] = FGA1d(alpha(i), vepsExp(j), finalTime, right_x, initWave, potential);
-
+        [w, xx_w] = FGA2d(alpha(i), vepsExp(j), finalTime, right_x, initWave, potential);
+        
         % TSSA method, as ground truth
-        dt = veps;
-        % dt = veps ^ 2;
-        [u, x_u] = TSSA1d(alpha(i), vepsExp(j), finalTime, right_x, dt, dx, initWave, potential);
-
+        % dt = veps;
+        dt = veps ^ 2;
+        [u, xx_u] = TSSA2d(alpha(i), vepsExp(j), finalTime, right_x, dt, initWave, potential);
+ 
         % test for convergence of TSSA method
         dt = dt / 2;
-        [u1, ~] = TSSA1d(alpha(i), vepsExp(j), finalTime, right_x, dt, dx, initWave, potential);
+        [u1, ~] = TSSA2d(alpha(i), vepsExp(j), finalTime, right_x, dt, initWave, potential);
         dist_TSSA = norm(u-u1) / norm(u);
         fprintf('distance between two time steps of TSSA is %e\n', dist_TSSA);
 
         % -----------------------------------------------
         % Visualization
         % -----------------------------------------------
+        colormap("jet");
         figure;
-
-        subplot(2, 2, 1)
+        
+        subplot(1, 2, 1)
         hold on
-        plot(x_w, real(w), '-');
-        plot(x_u, real(u), '-.');
+        contourf(xx_u, xx_u', abs(u) .^ 2);
+        xlabel('x');
+        ylabel('y');
+        shading interp;
+        % caxis([0, 350]);
+        colorbar;
+        axis equal
         hold off
-        title('real part')
-
-        subplot(2, 2, 2)
+        title('Subplot 1: solution of TSSA')
+        
+        subplot(1, 2, 2)
         hold on
-        plot(x_w, imag(w), '-');
-        plot(x_u, imag(u), '-.');
+        contourf(xx_w, xx_w', abs(w) .^ 2);
+        xlabel('x');
+        ylabel('y');
+        shading interp;
+        % caxis([0, 350]);
+        colorbar;
+        axis equal
         hold off
-        title('imag part')
-
-        subplot(2, 2, 3)
-        hold on
-        plot(x_w, abs(w).^2, '-');
-        plot(x_u, abs(u).^2, '-.');
-        hold off
-        title('position density')
-
-        subplot(2, 2, 4)
-        hold on    
-        plot(x_w, veps * imag( conj(w) .* gradient(w) ), '-');
-        plot(x_u, veps * imag( conj(u) .* gradient(u) ), '-.');
-        hold off
-        title('current density')
-
-        legend('FGA','TSSA', 'Orientation', 'horizontal', 'Location', [0.52 0.03  0  0])
+        title('Subplot 2: solution of FGA')
+        
         sgtitle(['alpha = ', num2str(alpha(i)), ', t = ', num2str(finalTime), ...
-                ', varepsilon = ', num2str(veps)]);
-
-        saveas(gcf, ['./figures/error_decay/', 'alpha_', num2str(i), '_veps_', num2str(j), '.png']);
+                ', varepsilon = ', num2str(2^vepsExp(j))]); 
+        
+        saveas(gcf, ['./figures/error_decay/', 'alpha_', num2str(i), '_veps_', num2str(j), '.png'])
 
         % ------------------------------------------------
         % Error calculation
-        % ------------------------------------------------
-        err_L2(i, j) = sqrt( sum( abs(u - w).^2 ) * dx );
+        % ------------------------------------------------            
+        err_L2(i, j) = sqrt( sum(sum( abs(u - w).^2 )) * dx * dx );
         fprintf('L2 distance between FGA and TSSA: %e\n', err_L2(i, j));
     end
 end
@@ -161,6 +156,7 @@ rowname = strings(nalpha, 1);
 for i = 1 : nalpha
     rowname(i, 1) = append("alpha=", num2str(alpha(i)));
 end
+
 L2Table = ["L2 error", colname; rowname, err_L2];
 fprintf("\nTable of L2 error\n");
 disp(L2Table);
@@ -174,7 +170,7 @@ disp(L2Table);
 % hopefully, error = O(veps ^ r), find out r
 figure;
 hold on
-p1 = zeros(nalpha, 2);  % coefficents of ployfit
+p1 = zeros(nalpha, 2);  % coefficents pf ployfit
 leg_str = cell(nalpha, 1);
 for i = 1 : nalpha    
     plot(-vepsExp, log2(err_L2(i, :)), '-*');

@@ -8,7 +8,7 @@ function cnt1 = count_zero_P_1d(alpha, finalTime, vepsExp, right_x, initWave, po
 %        right_x   -- right endpoint of domain of x
 %                     left endpoint of domian of x is 0
 %        initWave  -- function handle for initial wavefunction
-%                     u0 = initWavefun(x, veps)
+%                     u0 = initWave(x, veps)
 %        potential -- function handle of potential 
 %                     [V, DV, D2V] = potential(Q)
 %    Outputs:
@@ -57,12 +57,14 @@ cnt2 = 0;  % count for singular points of the Hamiltonian
 
 % Visualization of FGA quantities
 
-% folder = './figures/QP_demo_1d';
-% if ~exist(folder, 'file')
-%     mkdir(folder);
-% end
-% t = 0 : dt : finalTime;
-% t = t(1 : end-1);
+folder = './figures/QP_demo_1d';
+if ~exist(folder, 'file')
+    mkdir(folder);
+end
+delete('./figures/QP_demo_1d/qp_*.png');  % Note: clean old figures
+t = 0 : dt : finalTime;
+t = t(1 : end-1);
+nfig = 0;
 
 for i = 1 : nGB
     P_qp = P(i, :);
@@ -72,16 +74,19 @@ for i = 1 : nGB
 
     if (max(P_qp) > 1e-12) && (min(P_qp) < -1e-12)
         cnt1 = cnt1 + 1;
+        nfig = nfig + 1;
 
         % plot those Q(t,q,p), P(t,q,p) curves such that P(t) go through zero points
-        % figure;
-        % subplot(1, 2, 1);
-        % plot(t, P_qp, '-');
-        % title('P')
-        % subplot(1, 2, 2);
-        % plot(t, Q_qp, '-');
-        % title('Q')
-        % saveas(gcf, "./figures/QP_demo_1d/qp_" + num2str(i) + "_.png", 'png');
+        if nfig <= 10
+            figure;
+            subplot(1, 2, 1);
+            plot(t, P_qp, '-');
+            title('P')
+            subplot(1, 2, 2);
+            plot(t, Q_qp, '-');
+            title('Q')
+            saveas(gcf, "./figures/QP_demo_1d/qp_" + num2str(i) + ".png", 'png');
+        end
 
         PQ = abs(P_qp) + abs(DV);
         if min(PQ) < 1e-4
@@ -90,7 +95,7 @@ for i = 1 : nGB
     end
 end
 fprintf('During time interval [0, %.2f],\n', finalTime)
-fprintf('there are %d out of %d initial value pairs (q,p) such that P(t,q,p) go through zero points,\n', cnt1, nGB);
+fprintf('there are at least %d out of %d initial value pairs (q,p) such that P(t,q,p) go through zero points,\n', cnt1, nGB);
 fprintf('there are %d singular points\n', cnt2);
 
 end
