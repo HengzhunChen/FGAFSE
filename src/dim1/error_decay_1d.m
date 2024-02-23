@@ -78,6 +78,7 @@ if ~exist(folder, 'file')
     mkdir(folder);
 end
 delete('./figures/error_decay/alpha*veps*.png');  % Note: clean old figures
+delete('./figures/error_decay/alpha*veps*.eps');  % Note: clean old figures
 
 for i = 1 : nalpha
     for j = 1 : nveps
@@ -93,54 +94,68 @@ for i = 1 : nalpha
         [w, x_w] = FGA1d(alpha(i), vepsExp(j), finalTime, right_x, initWave, potential);
 
         % TSSA method, as ground truth
-        dt = veps;
-        % dt = veps ^ 2;
+        % dt = veps;
+        dt = veps ^ 2;
         [u, x_u] = TSSA1d(alpha(i), vepsExp(j), finalTime, right_x, dt, dx, initWave, potential);
 
         % test for convergence of TSSA method
-        dt = dt / 2;
-        [u1, ~] = TSSA1d(alpha(i), vepsExp(j), finalTime, right_x, dt, dx, initWave, potential);
-        dist_TSSA = norm(u-u1) / norm(u);
-        fprintf('distance between two time steps of TSSA is %e\n', dist_TSSA);
+        % dt = dt / 2;
+        % [u1, ~] = TSSA1d(alpha(i), vepsExp(j), finalTime, right_x, dt, dx, initWave, potential);
+        % dist_TSSA = norm(u-u1) / norm(u);
+        % fprintf('distance between two time steps of TSSA is %e\n', dist_TSSA);
 
         % -----------------------------------------------
         % Visualization
         % -----------------------------------------------
+
+        % ----  Code for plot figures used in paper ----
         figure;
-
-        subplot(2, 2, 1)
+        xidx = x_w < 1.8 & x_w > 0.8; 
         hold on
-        plot(x_w, real(w), '-');
-        plot(x_u, real(u), '-.');
+        box on
+        plot(x_u(xidx), real(u(xidx)), 'b-', 'LineWidth', 2.5);
+        plot(x_w(xidx), real(w(xidx)), 'r--', 'LineWidth', 2.5);
+        xlabel('x', 'FontSize', 16, 'FontWeight', 'bold')
+        ylabel('Re u', 'FontSize', 16, 'FontWeight', 'bold')
+        ylim([-6, 6])
+        set(gca, 'Fontsize', 15, 'FontWeight', 'bold')
         hold off
-        title('real part')
+        % saveas(gcf, ['./figures/error_decay/', 'alpha_', num2str(i), '_veps_', num2str(j)], 'png');
+        saveas(gcf, ['./figures/error_decay/', 'alpha_', num2str(i), '_veps_', num2str(j)], 'epsc');
 
-        subplot(2, 2, 2)
-        hold on
-        plot(x_w, imag(w), '-');
-        plot(x_u, imag(u), '-.');
-        hold off
-        title('imag part')
+        % ---- Code for further solution comparison ----
+        % subplot(2, 2, 1)
+        % hold on
+        % plot(x_w, real(w), '-');
+        % plot(x_u, real(u), '-.');
+        % hold off
+        % title('real part')
 
-        subplot(2, 2, 3)
-        hold on
-        plot(x_w, abs(w).^2, '-');
-        plot(x_u, abs(u).^2, '-.');
-        hold off
-        title('position density')
+        % subplot(2, 2, 2)
+        % hold on
+        % plot(x_w, imag(w), '-');
+        % plot(x_u, imag(u), '-.');
+        % hold off
+        % title('imag part')
 
-        subplot(2, 2, 4)
-        hold on    
-        plot(x_w, veps * imag( conj(w) .* gradient(w) ), '-');
-        plot(x_u, veps * imag( conj(u) .* gradient(u) ), '-.');
-        hold off
-        title('current density')
+        % subplot(2, 2, 3)
+        % hold on
+        % plot(x_w, abs(w).^2, '-');
+        % plot(x_u, abs(u).^2, '-.');
+        % hold off
+        % title('position density')
 
-        legend('FGA','TSSA', 'Orientation', 'horizontal', 'Location', [0.52 0.03  0  0])
-        sgtitle(['alpha = ', num2str(alpha(i)), ', t = ', num2str(finalTime), ...
-                ', varepsilon = ', num2str(veps)]);
+        % subplot(2, 2, 4)
+        % hold on    
+        % plot(x_w, veps * imag( conj(w) .* gradient(w) ), '-');
+        % plot(x_u, veps * imag( conj(u) .* gradient(u) ), '-.');
+        % hold off
+        % title('current density')
 
-        saveas(gcf, ['./figures/error_decay/', 'alpha_', num2str(i), '_veps_', num2str(j), '.png']);
+        % legend('FGA','TSSA', 'Orientation', 'horizontal', 'Location', [0.52 0.03  0  0])
+        % sgtitle(['alpha = ', num2str(alpha(i)), ', t = ', num2str(finalTime), ...
+        %         ', varepsilon = ', num2str(veps)]);
+        % saveas(gcf, ['./figures/error_decay/', 'alpha_', num2str(i), '_veps_', num2str(j), '.png']);
 
         % ------------------------------------------------
         % Error calculation
@@ -151,20 +166,15 @@ for i = 1 : nalpha
 end
 
 % ------------------------------------------
-% Write result to a table
+% Print result of errors
 % ------------------------------------------
-colname = strings(1, nveps);
-for j = 1 : nveps
-    colname(1, j) = append("veps=1/", num2str(2^(-vepsExp(j))));
-end
-rowname = strings(nalpha, 1);
-for i = 1 : nalpha
-    rowname(i, 1) = append("alpha=", num2str(alpha(i)));
-end
-L2Table = ["L2 error", colname; rowname, err_L2];
 fprintf("\nTable of L2 error\n");
-disp(L2Table);
-% writematrix(L2Table, 'error.xlsx');
+for i = 1: nalpha
+    for j = 1 : nveps
+        fprintf('%.2e ', err_L2(i, j));
+    end
+    fprintf('\n')
+end
 
 % --------------------------------------
 % Plot error decay curves
@@ -172,24 +182,37 @@ disp(L2Table);
 
 % Fix alpha to plot the relation between log(error) and log(veps),
 % hopefully, error = O(veps ^ r), find out r
+mylinestyle = ["-*", "-o", "-^", "-square", "-diamond"];
 figure;
+set(gca, 'Fontsize', 14)
 hold on
+box on 
+grid on
+
 p1 = zeros(nalpha, 2);  % coefficents of ployfit
 leg_str = cell(nalpha, 1);
-for i = 1 : nalpha    
-    plot(-vepsExp, log2(err_L2(i, :)), '-*');
+for i = 1 : nalpha
+    plot(-vepsExp, log2(err_L2(i, :)), mylinestyle(i), 'Linewidth', 1);
     p1(i, :) = polyfit(vepsExp, log2(err_L2(i, :)), 1);
-    leg_str{i} = ['alpha=', num2str(alpha(i)), ', slope: ', num2str(p1(i, 1))];
-    xlabel("-log_2(veps)");
-    ylabel("log_2(L2 error)");
+    leg_str{i} = ['$\alpha=$', num2str(alpha(i)), ', slope: ', num2str(p1(i, 1))];
 end
-legend(leg_str);
-title(['L2 error with final time T = ', num2str(finalTime)]);
+
+txt_x = xlabel("$-\log_2(\varepsilon)$");
+txt_y = ylabel("$\log_2$($L^2$ error)");
+set(txt_x, "Interpreter", "latex")
+set(txt_y, "Interpreter", "latex")
+legend(leg_str, "Interpreter", "latex");
+% title(['L2 error with final time T = ', num2str(finalTime)]);
+hold off
+
 if isempty(figName)
     figName = './L2_err_veps.png';
 end
-saveas(gcf, figName);
-hold off
+if contains(figName, "eps")
+    saveas(gcf, figName, 'epsc');
+else
+    saveas(gcf, figName);
+end    
 
 fprintf('    slope    intercept  (L2 error)\n');
 disp(p1);

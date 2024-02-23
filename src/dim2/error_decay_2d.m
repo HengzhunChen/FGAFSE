@@ -78,6 +78,7 @@ if ~exist(folder, 'file')
     mkdir(folder);
 end
 delete('./figures/error_decay/alpha*veps*.png');  % Note: clean old figures
+delete('./figures/error_decay/alpha*veps*.eps');  % Note: clean old figures
 
 for i = 1 : nalpha
     for j = 1 : nveps
@@ -97,45 +98,95 @@ for i = 1 : nalpha
         [u, xx_u] = TSSA2d(alpha(i), vepsExp(j), finalTime, right_x, dt, initWave, potential);
  
         % test for convergence of TSSA method
-        dt = dt / 2;
-        [u1, ~] = TSSA2d(alpha(i), vepsExp(j), finalTime, right_x, dt, initWave, potential);
-        dist_TSSA = norm(u-u1) / norm(u);
-        fprintf('distance between two time steps of TSSA is %e\n', dist_TSSA);
+        % dt = dt / 2;
+        % [u1, ~] = TSSA2d(alpha(i), vepsExp(j), finalTime, right_x, dt, initWave, potential);
+        % dist_TSSA = norm(u-u1) / norm(u);
+        % fprintf('distance between two time steps of TSSA is %e\n', dist_TSSA);
 
         % -----------------------------------------------
         % Visualization
         % -----------------------------------------------
-        colormap("jet");
+
+        % ----  Code for plot figures used in paper ----
+        X = xx_w;
+        Y = xx_w';
+        Zw = abs(w).^2;
+        Zu = abs(u).^2;
+        
+        x1 = X(:, 1);
+        rowidx = 0.7 <= x1 & x1 <= 1.3;
+        colidx = 1.0 <= x1 & x1 <= 1.5;
+        X = X(rowidx, colidx);
+        Y = Y(rowidx, colidx);
+
+        Zw = Zw(rowidx, colidx);
         figure;
-        
-        subplot(1, 2, 1)
-        hold on
-        contourf(xx_u, xx_u', abs(u) .^ 2);
-        xlabel('x');
-        ylabel('y');
+        colormap('jet');
+        contourf(X, Y, Zw, 10);
+        xlabel('x1')
+        ylabel('x2')
+        set(gca, 'FontSize', 15, 'FontWeight', 'bold')
         shading interp;
-        % caxis([0, 350]);
         colorbar;
         axis equal
-        hold off
-        title('Subplot 1: solution of TSSA')
-        
-        subplot(1, 2, 2)
-        hold on
-        contourf(xx_w, xx_w', abs(w) .^ 2);
-        xlabel('x');
-        ylabel('y');
+        % saveas(gcf, ['./figures/error_decay/', 'alpha_', num2str(i), '_veps_', num2str(j), '_fga.png'])
+        saveas(gcf, ['./figures/error_decay/', 'alpha_', num2str(i), '_veps_', num2str(j), '_fga'], 'epsc')
+
+        Zu = Zu(rowidx, colidx);
+        figure;
+        colormap('jet');
+        contourf(X, Y, Zu, 10);
+        xlabel('x1')
+        ylabel('x2')
+        set(gca, 'Fontsize', 15, 'FontWeight', 'bold')
         shading interp;
-        % caxis([0, 350]);
         colorbar;
         axis equal
-        hold off
-        title('Subplot 2: solution of FGA')
+        % saveas(gcf,  ['./figures/error_decay/', 'alpha_', num2str(i), '_veps_', num2str(j), '_tssa.png'])
+        saveas(gcf,  ['./figures/error_decay/', 'alpha_', num2str(i), '_veps_', num2str(j), '_tssa'], 'epsc')
+
+        dist = abs(Zw - Zu);
+        figure;
+        colormap('jet');
+        contourf(X, Y, dist, 10);
+        xlabel('x1')
+        ylabel('x2')
+        set(gca, 'Fontsize', 15, 'FontWeight', 'bold')
+        shading interp;
+        colorbar;
+        axis equal
+        % saveas(gcf,  ['./figures/error_decay/', 'alpha_', num2str(i), '_veps_', num2str(j), '_dist.png'])
+        saveas(gcf,  ['./figures/error_decay/', 'alpha_', num2str(i), '_veps_', num2str(j), '_dist'], 'epsc')
+
+        % ---- Code for further solution comparison ----
+        % figure;
+        % colormap("jet");        
+
+        % subplot(1, 2, 1)
+        % hold on
+        % contourf(xx_u, xx_u', abs(u).^2);
+        % xlabel('x');
+        % ylabel('y');
+        % shading interp;
+        % colorbar;
+        % axis equal
+        % hold off
+        % title('Subplot 1: solution of TSSA')
         
-        sgtitle(['alpha = ', num2str(alpha(i)), ', t = ', num2str(finalTime), ...
-                ', varepsilon = ', num2str(2^vepsExp(j))]); 
+        % subplot(1, 2, 2)
+        % hold on
+        % contourf(xx_w, xx_w', abs(w).^2);
+        % xlabel('x');
+        % ylabel('y');
+        % shading interp;
+        % colorbar;
+        % axis equal
+        % hold off
+        % title('Subplot 2: solution of FGA')
         
-        saveas(gcf, ['./figures/error_decay/', 'alpha_', num2str(i), '_veps_', num2str(j), '.png'])
+        % sgtitle(['alpha = ', num2str(alpha(i)), ', t = ', num2str(finalTime), ...
+        %         ', varepsilon = ', num2str(2^vepsExp(j))]); 
+        % saveas(gcf, ['./figures/error_decay/', 'alpha_', num2str(i), '_veps_', num2str(j), '.png'])
 
         % ------------------------------------------------
         % Error calculation
@@ -146,21 +197,14 @@ for i = 1 : nalpha
 end
 
 % ------------------------------------------
-% Write result to a table
+% Print result of errors
 % ------------------------------------------
-colname = strings(1, nveps);
-for j = 1 : nveps
-    colname(1, j) = append("veps=1/", num2str(2^(-vepsExp(j))));
+for i = 1: nalpha
+    for j = 1 : nveps
+        fprintf('%.2e ', err_L2(i,j));
+    end
+    fprintf('\n')
 end
-rowname = strings(nalpha, 1);
-for i = 1 : nalpha
-    rowname(i, 1) = append("alpha=", num2str(alpha(i)));
-end
-
-L2Table = ["L2 error", colname; rowname, err_L2];
-fprintf("\nTable of L2 error\n");
-disp(L2Table);
-% writematrix(L2Table, 'error.xlsx');
 
 % --------------------------------------
 % Plot error decay curves
@@ -168,24 +212,36 @@ disp(L2Table);
 
 % Fix alpha to plot the relation between log(error) and log(veps),
 % hopefully, error = O(veps ^ r), find out r
+mylinestyle = ["-*", "-o", "-^", "-square", "-diamond"];
 figure;
 hold on
-p1 = zeros(nalpha, 2);  % coefficents pf ployfit
+box on 
+grid on
+
+p1 = zeros(nalpha, 2);  % coefficents of ployfit
 leg_str = cell(nalpha, 1);
-for i = 1 : nalpha    
-    plot(-vepsExp, log2(err_L2(i, :)), '-*');
+for i = 1 : nalpha
+    plot(-vepsExp, log2(err_L2(i, :)), mylinestyle(i), 'Linewidth', 1);
     p1(i, :) = polyfit(vepsExp, log2(err_L2(i, :)), 1);
-    leg_str{i} = ['alpha=', num2str(alpha(i)), ', slope: ', num2str(p1(i, 1))];
-    xlabel("-log_2(veps)");
-    ylabel("log_2(L2 error)");
+    leg_str{i} = ['$\alpha=$', num2str(alpha(i)), ', slope: ', num2str(p1(i, 1))];
 end
-legend(leg_str);
-title(['L2 error with final time T = ', num2str(finalTime)]);
+
+txt_x = xlabel("$-\log_2(\varepsilon)$");
+txt_y = ylabel("$\log_2$($L^2$ error)");
+set(txt_x, "Interpreter", "latex")
+set(txt_y, "Interpreter", "latex")
+legend(leg_str, "Interpreter", "latex");
+% title(['L2 error with final time T = ', num2str(finalTime)]);
+hold off
+
 if isempty(figName)
     figName = './L2_err_veps.png';
 end
-saveas(gcf, figName);
-hold off
+if contains(figName, "eps")
+    saveas(gcf, figName, 'epsc');
+else
+    saveas(gcf, figName);
+end
 
 fprintf('    slope    intercept  (L2 error)\n');
 disp(p1);
