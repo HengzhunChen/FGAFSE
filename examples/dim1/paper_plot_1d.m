@@ -5,21 +5,24 @@ cd ../../
 FGAFSE_startup();
 cd ./examples/dim1
 
+% NOTE: remember to comment the visualization code in error_decay_1d() to match the requirement.
+
 % Solution Comparison
-right_x = 2;
-final_time = 0.25;
-alpha = [1.3, 1.7];
-vepsExp = [-6, -7, -8];
-figureName = './L2err_alpha_1to2.png';
-error_decay_1d(alpha, vepsExp, right_x, final_time, @initWave, @potential, figureName);
+% right_x = 2;
+% final_time = 0.25;
+% alpha = [1.3, 1.7];
+% vepsExp = [-6, -7, -8];
+% figureName = './L2err_alpha_1to2.png';
+% error_decay_1d(alpha, vepsExp, right_x, final_time, @initWave, @potential, figureName);
 
 % Error decay
 right_x = 2;
 final_time = 0.25;
 alpha = [1.1, 1.3, 1.5, 1.7, 1.9];
 vepsExp = [-6, -7, -8, -9, -10];
-% figureName = './L2err_alpha_1to2.png';
-figureName = './L2err_alpha_1to2.eps';
+figureName = './L2err_alpha_1to2.png';
+% figureName = './L2err_alpha_1to2_k_1.eps';
+% figureName = './L2err_alpha_1to2_k_6frac11.eps';
 error_decay_1d(alpha, vepsExp, right_x, final_time, @initWave, @potential, figureName);
 for alphaIdx = alpha
     for expIndex = vepsExp

@@ -52,7 +52,6 @@ if alpha == 2
 else
     delta = veps;  % default value
     % delta = veps ^ (3/5);  % this option comes from current theorectical analysis
-    % delta = veps^2;
 
     Pdelta = sum(P.^2, 2) + delta^2;  % shape: (nGB, 1)
 

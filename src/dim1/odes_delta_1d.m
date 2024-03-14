@@ -34,9 +34,7 @@ if alpha == 2
     DlogA = 0.5 * Z_inv .* DZ;
 else
     delta = veps;  % default value
-    % delta = veps ^ (6/11);  % this option comes from current theoretical analysis 
-    % delta = veps^2;
-    % delta = 1e-8;
+    % delta = veps^(6/11);  % this option comes from current theoretical analysis 
 
     Pdelta = abs(P).^2 + delta^2;
 

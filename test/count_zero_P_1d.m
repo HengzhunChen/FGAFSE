@@ -57,11 +57,12 @@ cnt2 = 0;  % count for singular points of the Hamiltonian
 
 % Visualization of FGA quantities
 
-folder = './figures/QP_demo_1d';
+folder = "./figures/QP_demo_1d/" + num2str(alpha) + "_" + num2str(-vepsExp);
 if ~exist(folder, 'file')
     mkdir(folder);
 end
-delete('./figures/QP_demo_1d/qp_*.png');  % Note: clean old figures
+old_figure = folder + "/qp_*.png";
+delete(old_figure);  % Note: clean old figures
 t = 0 : dt : finalTime;
 t = t(1 : end-1);
 nfig = 0;
@@ -85,7 +86,8 @@ for i = 1 : nGB
             subplot(1, 2, 2);
             plot(t, Q_qp, '-');
             title('Q')
-            saveas(gcf, "./figures/QP_demo_1d/qp_" + num2str(i) + ".png", 'png');
+            filename = folder + "/qp_" + num2str(i) + ".png";
+            saveas(gcf, filename, 'png');
         end
 
         PQ = abs(P_qp) + abs(DV);

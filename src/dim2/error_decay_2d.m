@@ -10,7 +10,7 @@ function error_decay_2d(alpha, vepsExp, right_x, finalTime, initWave, potential,
 %                     left endpoint of domain of x is 0
 %        finalTime -- final time of evolution
 %        initWave  -- function handle for initial wavefunction
-%                     u0 = initWavefun(x, veps)
+%                     u0 = initWavefun(X, Y, veps)
 %        potential -- function handle of potential 
 %                     [V, DV, D2V] = potential(Q1, Q2)
 %        figName   -- figure name for plot of L2 error decay curve
@@ -77,8 +77,10 @@ folder = './figures/error_decay';
 if ~exist(folder, 'file')
     mkdir(folder);
 end
-delete('./figures/error_decay/alpha*veps*.png');  % Note: clean old figures
-delete('./figures/error_decay/alpha*veps*.eps');  % Note: clean old figures
+old_png = folder + "/alpha*veps*.png";
+old_eps = folder + "/alpha*veps*.eps";
+delete(old_png);  % Note: clean old figures
+delete(old_eps);  % Note: clean old figures
 
 for i = 1 : nalpha
     for j = 1 : nveps
@@ -108,85 +110,89 @@ for i = 1 : nalpha
         % -----------------------------------------------
 
         % ----  Code for plot figures used in paper ----
-        X = xx_w;
-        Y = xx_w';
-        Zw = abs(w).^2;
-        Zu = abs(u).^2;
+        % X = xx_w;
+        % Y = xx_w';
+        % Zw = abs(w).^2;
+        % Zu = abs(u).^2;
         
-        x1 = X(:, 1);
-        rowidx = 0.7 <= x1 & x1 <= 1.3;
-        colidx = 1.0 <= x1 & x1 <= 1.5;
-        X = X(rowidx, colidx);
-        Y = Y(rowidx, colidx);
+        % x1 = X(:, 1);
+        % rowidx = 0.7 <= x1 & x1 <= 1.3;
+        % colidx = 1.0 <= x1 & x1 <= 1.5;
+        % X = X(rowidx, colidx);
+        % Y = Y(rowidx, colidx);
 
-        Zw = Zw(rowidx, colidx);
-        figure;
-        colormap('jet');
-        contourf(X, Y, Zw, 10);
-        xlabel('x1')
-        ylabel('x2')
-        set(gca, 'FontSize', 15, 'FontWeight', 'bold')
-        shading interp;
-        colorbar;
-        axis equal
-        % saveas(gcf, ['./figures/error_decay/', 'alpha_', num2str(i), '_veps_', num2str(j), '_fga.png'])
-        saveas(gcf, ['./figures/error_decay/', 'alpha_', num2str(i), '_veps_', num2str(j), '_fga'], 'epsc')
+        % Zw = Zw(rowidx, colidx);
+        % figure;
+        % colormap('jet');
+        % contourf(X, Y, Zw, 10);
+        % xlabel('x1')
+        % ylabel('x2')
+        % set(gca, 'FontSize', 15, 'FontWeight', 'bold')
+        % shading interp;
+        % colorbar;
+        % axis equal
+        % filename = folder + "/alpha_" + num2str(i) + "_veps_" + num2str(j) + "_fga";
+        % saveas(gcf, filename, 'png');
+        % saveas(gcf, filename, 'epsc');
 
-        Zu = Zu(rowidx, colidx);
-        figure;
-        colormap('jet');
-        contourf(X, Y, Zu, 10);
-        xlabel('x1')
-        ylabel('x2')
-        set(gca, 'Fontsize', 15, 'FontWeight', 'bold')
-        shading interp;
-        colorbar;
-        axis equal
-        % saveas(gcf,  ['./figures/error_decay/', 'alpha_', num2str(i), '_veps_', num2str(j), '_tssa.png'])
-        saveas(gcf,  ['./figures/error_decay/', 'alpha_', num2str(i), '_veps_', num2str(j), '_tssa'], 'epsc')
+        % Zu = Zu(rowidx, colidx);
+        % figure;
+        % colormap('jet');
+        % contourf(X, Y, Zu, 10);
+        % xlabel('x1')
+        % ylabel('x2')
+        % set(gca, 'Fontsize', 15, 'FontWeight', 'bold')
+        % shading interp;
+        % colorbar;
+        % axis equal
+        % filename = folder + "/alpha_" + num2str(i) + "_veps_" + num2str(j) + "_tssa";
+        % saveas(gcf, filename, 'png');
+        % saveas(gcf, filename, 'epsc');
 
-        dist = abs(Zw - Zu);
-        figure;
-        colormap('jet');
-        contourf(X, Y, dist, 10);
-        xlabel('x1')
-        ylabel('x2')
-        set(gca, 'Fontsize', 15, 'FontWeight', 'bold')
-        shading interp;
-        colorbar;
-        axis equal
-        % saveas(gcf,  ['./figures/error_decay/', 'alpha_', num2str(i), '_veps_', num2str(j), '_dist.png'])
-        saveas(gcf,  ['./figures/error_decay/', 'alpha_', num2str(i), '_veps_', num2str(j), '_dist'], 'epsc')
+        % dist = abs(Zw - Zu);
+        % figure;
+        % colormap('jet');
+        % contourf(X, Y, dist, 10);
+        % xlabel('x1')
+        % ylabel('x2')
+        % set(gca, 'Fontsize', 15, 'FontWeight', 'bold')
+        % shading interp;
+        % colorbar;
+        % axis equal
+        % filename = folder + "/alpha_" + num2str(i) + "_veps_" + num2str(j) + "_dist";
+        % saveas(gcf, filename, 'png');
+        % saveas(gcf, filename, 'epsc');
 
         % ---- Code for further solution comparison ----
-        % figure;
-        % colormap("jet");        
+        figure;
+        colormap("jet");        
 
-        % subplot(1, 2, 1)
-        % hold on
-        % contourf(xx_u, xx_u', abs(u).^2);
-        % xlabel('x');
-        % ylabel('y');
-        % shading interp;
-        % colorbar;
-        % axis equal
-        % hold off
-        % title('Subplot 1: solution of TSSA')
+        subplot(1, 2, 1)
+        hold on
+        contourf(xx_u, xx_u', abs(u).^2);
+        xlabel('x');
+        ylabel('y');
+        shading interp;
+        colorbar;
+        axis equal
+        hold off
+        title('Subplot 1: solution of TSSA')
         
-        % subplot(1, 2, 2)
-        % hold on
-        % contourf(xx_w, xx_w', abs(w).^2);
-        % xlabel('x');
-        % ylabel('y');
-        % shading interp;
-        % colorbar;
-        % axis equal
-        % hold off
-        % title('Subplot 2: solution of FGA')
+        subplot(1, 2, 2)
+        hold on
+        contourf(xx_w, xx_w', abs(w).^2);
+        xlabel('x');
+        ylabel('y');
+        shading interp;
+        colorbar;
+        axis equal
+        hold off
+        title('Subplot 2: solution of FGA')
         
-        % sgtitle(['alpha = ', num2str(alpha(i)), ', t = ', num2str(finalTime), ...
-        %         ', varepsilon = ', num2str(2^vepsExp(j))]); 
-        % saveas(gcf, ['./figures/error_decay/', 'alpha_', num2str(i), '_veps_', num2str(j), '.png'])
+        sgtitle(['alpha = ', num2str(alpha(i)), ', t = ', num2str(finalTime), ...
+                ', varepsilon = ', num2str(2^vepsExp(j))]); 
+        filename = folder + "/alpha_" + num2str(i) + "_veps_" + num2str(j);
+        saveas(gcf, filename, 'png');
 
         % ------------------------------------------------
         % Error calculation
@@ -199,12 +205,14 @@ end
 % ------------------------------------------
 % Print result of errors
 % ------------------------------------------
+fprintf("\nTable of L2 error\n");
 for i = 1: nalpha
     for j = 1 : nveps
-        fprintf('%.2e ', err_L2(i,j));
+        fprintf('%.2e ', err_L2(i, j));
     end
     fprintf('\n')
 end
+save("L2_error.mat", "err_L2");
 
 % --------------------------------------
 % Plot error decay curves
@@ -214,6 +222,7 @@ end
 % hopefully, error = O(veps ^ r), find out r
 mylinestyle = ["-*", "-o", "-^", "-square", "-diamond"];
 figure;
+set(gca, 'Fontsize', 14)
 hold on
 box on 
 grid on
@@ -239,9 +248,9 @@ if isempty(figName)
 end
 if contains(figName, "eps")
     saveas(gcf, figName, 'epsc');
-else
-    saveas(gcf, figName);
+    figName = replace(figName, "eps", "png");
 end
+saveas(gcf, figName);
 
 fprintf('    slope    intercept  (L2 error)\n');
 disp(p1);

@@ -77,8 +77,10 @@ folder = './figures/error_decay';
 if ~exist(folder, 'file')
     mkdir(folder);
 end
-delete('./figures/error_decay/alpha*veps*.png');  % Note: clean old figures
-delete('./figures/error_decay/alpha*veps*.eps');  % Note: clean old figures
+old_png = folder + "/alpha*veps*.png";
+old_eps = folder + "/alpha*veps*.eps";
+delete(old_png);  % Note: clean old figures
+delete(old_eps);  % Note: clean old figures
 
 for i = 1 : nalpha
     for j = 1 : nveps
@@ -109,53 +111,56 @@ for i = 1 : nalpha
         % -----------------------------------------------
 
         % ----  Code for plot figures used in paper ----
-        figure;
-        xidx = x_w < 1.8 & x_w > 0.8; 
-        hold on
-        box on
-        plot(x_u(xidx), real(u(xidx)), 'b-', 'LineWidth', 2.5);
-        plot(x_w(xidx), real(w(xidx)), 'r--', 'LineWidth', 2.5);
-        xlabel('x', 'FontSize', 16, 'FontWeight', 'bold')
-        ylabel('Re u', 'FontSize', 16, 'FontWeight', 'bold')
-        ylim([-6, 6])
-        set(gca, 'Fontsize', 15, 'FontWeight', 'bold')
-        hold off
-        % saveas(gcf, ['./figures/error_decay/', 'alpha_', num2str(i), '_veps_', num2str(j)], 'png');
-        saveas(gcf, ['./figures/error_decay/', 'alpha_', num2str(i), '_veps_', num2str(j)], 'epsc');
+        % figure;
+        % xidx = x_w < 1.8 & x_w > 0.8; 
+        % hold on
+        % box on
+        % plot(x_u(xidx), real(u(xidx)), 'b-', 'LineWidth', 2.5);
+        % plot(x_w(xidx), real(w(xidx)), 'r--', 'LineWidth', 2.5);
+        % xlabel('x', 'FontSize', 16, 'FontWeight', 'bold')
+        % ylabel('Re \psi', 'FontSize', 16, 'FontWeight', 'bold')
+        % ylim([-6, 6])
+        % set(gca, 'Fontsize', 15, 'FontWeight', 'bold')
+        % hold off
+        % filename = folder + "/alpha_" + num2str(i) + "_veps_" + num2str(j);
+        % saveas(gcf, filename, 'png');
+        % saveas(gcf, filename, 'epsc');
 
         % ---- Code for further solution comparison ----
-        % subplot(2, 2, 1)
-        % hold on
-        % plot(x_w, real(w), '-');
-        % plot(x_u, real(u), '-.');
-        % hold off
-        % title('real part')
+        figure;
+        subplot(2, 2, 1)
+        hold on
+        plot(x_w, real(w), '-');
+        plot(x_u, real(u), '-.');
+        hold off
+        title('real part')
 
-        % subplot(2, 2, 2)
-        % hold on
-        % plot(x_w, imag(w), '-');
-        % plot(x_u, imag(u), '-.');
-        % hold off
-        % title('imag part')
+        subplot(2, 2, 2)
+        hold on
+        plot(x_w, imag(w), '-');
+        plot(x_u, imag(u), '-.');
+        hold off
+        title('imag part')
 
-        % subplot(2, 2, 3)
-        % hold on
-        % plot(x_w, abs(w).^2, '-');
-        % plot(x_u, abs(u).^2, '-.');
-        % hold off
-        % title('position density')
+        subplot(2, 2, 3)
+        hold on
+        plot(x_w, abs(w).^2, '-');
+        plot(x_u, abs(u).^2, '-.');
+        hold off
+        title('position density')
 
-        % subplot(2, 2, 4)
-        % hold on    
-        % plot(x_w, veps * imag( conj(w) .* gradient(w) ), '-');
-        % plot(x_u, veps * imag( conj(u) .* gradient(u) ), '-.');
-        % hold off
-        % title('current density')
+        subplot(2, 2, 4)
+        hold on    
+        plot(x_w, veps * imag( conj(w) .* gradient(w) ), '-');
+        plot(x_u, veps * imag( conj(u) .* gradient(u) ), '-.');
+        hold off
+        title('current density')
 
-        % legend('FGA','TSSA', 'Orientation', 'horizontal', 'Location', [0.52 0.03  0  0])
-        % sgtitle(['alpha = ', num2str(alpha(i)), ', t = ', num2str(finalTime), ...
-        %         ', varepsilon = ', num2str(veps)]);
-        % saveas(gcf, ['./figures/error_decay/', 'alpha_', num2str(i), '_veps_', num2str(j), '.png']);
+        legend('FGA','TSSA', 'Orientation', 'horizontal', 'Location', [0.52 0.03  0  0])
+        sgtitle(['alpha = ', num2str(alpha(i)), ', t = ', num2str(finalTime), ...
+                ', varepsilon = ', num2str(veps)]);
+        filename = folder + "/alpha_" + num2str(i) + "_veps_" + num2str(j);
+        saveas(gcf, filename, 'png');
 
         % ------------------------------------------------
         % Error calculation
@@ -175,6 +180,7 @@ for i = 1: nalpha
     end
     fprintf('\n')
 end
+save("L2_error.mat", "err_L2");
 
 % --------------------------------------
 % Plot error decay curves
@@ -210,9 +216,9 @@ if isempty(figName)
 end
 if contains(figName, "eps")
     saveas(gcf, figName, 'epsc');
-else
-    saveas(gcf, figName);
-end    
+    figName = replace(figName, "eps", "png");
+end
+saveas(gcf, figName, 'png');
 
 fprintf('    slope    intercept  (L2 error)\n');
 disp(p1);

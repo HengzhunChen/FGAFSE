@@ -5,22 +5,36 @@ cd ../../
 FGAFSE_startup();
 cd ./examples/dim2
 
-% Solution Comparison
-right_x = 2;
-final_time = 0.25;
-alpha = 1.5;
-vepsExp = [-6, -7, -8];
-figureName = './L2err_alpha_1to2.png';
-error_decay_2d(alpha, vepsExp, right_x, final_time, @initWave, @potential, figureName);
+% NOTE: remember to comment the visualization code in error_decay_1d() to match the requirement.
 
-% Error decay
+% Solution Comparison
 % right_x = 2;
 % final_time = 0.25;
-% alpha = [1.1, 1.3, 1.5, 1.7, 1.9];
-% vepsExp = [-6, -7, -8, -9];
-% % figureName = './L2err_alpha_1to2.png';
-% figureName = './L2err_alpha_1to2.eps';
+% alpha = 1.5;
+% vepsExp = [-6, -7, -8];
+% figureName = './L2err_alpha_1to2.png';
 % error_decay_2d(alpha, vepsExp, right_x, final_time, @initWave, @potential, figureName);
+
+% Error decay
+right_x = 2;
+final_time = 0.25;
+% alpha = [1.1, 1.3, 1.5, 1.7, 1.9];
+alpha = 1.1;
+vepsExp = [-6, -7, -8, -9];
+figureName = './L2err_alpha_1to2.png';
+% figureName = './L2err_alpha_1to2_k_1.eps';
+% figureName = './L2err_alpha_1to2_k_3frac5.eps';
+error_decay_2d(alpha, vepsExp, right_x, final_time, @initWave, @potential, figureName);
+for alphaIdx = alpha
+    for expIndex = vepsExp
+        % check whether the trajectory of P go through its zero points
+        fprintf("alpha = %f, vepsExp = %d\n", alphaIdx, expIndex);
+        veps = 2^expIndex;
+        delta = veps;
+        % delta = veps^(3/5);
+        check_zero_P_2d(alphaIdx, final_time, expIndex, right_x, delta, @initWave, @potential);
+    end
+end
 
 
 % ------------------------------------------------------------
