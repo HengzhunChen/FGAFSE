@@ -57,7 +57,7 @@ else
 
     DQ = Pdelta .^ ((alpha-2)/2) .* P;
     DP = -DV;
-    DS = (1 - 1/alpha) * Pdelta .^ (alpha/2) - V;
+    DS = sum(P.^2, 2) .* Pdelta.^((alpha-2)/2) - (1 / alpha) * Pdelta.^(alpha/2) - V;
 
     % ---------------------------------------------------------------------------------------
     % NOTE: Be careful with the derivative calculation here to match the dimension.

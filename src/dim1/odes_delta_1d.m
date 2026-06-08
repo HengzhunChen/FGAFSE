@@ -40,7 +40,7 @@ else
 
     DQ = ( Pdelta.^((alpha- 2)/2) ) .* P;
     DP = -DV;
-    DS = (1 - 1/alpha) * Pdelta.^(alpha/2)  - V;
+    DS = abs(P).^2 .* Pdelta.^((alpha-2)/2) - (1 / alpha) .* Pdelta.^(alpha/2) - V;
 
     Z = DzQ + 1i * DzP;
     eps = 1e-12;
