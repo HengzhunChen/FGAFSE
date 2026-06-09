@@ -58,44 +58,34 @@ uu = initWavefun(xx, xx', veps);
 % Main loop
 p = [0 : nx/2 - 1, -nx/2 : -1] * 2 * pi / (right_x - 0);  % shape: (nx, 1)
 pp = p' * ones(1, nx);  % shape: (nx, nx)
-% fLaplace = (abs(pp) .^ alpha + abs(pp') .^ alpha) / alpha;
 fLaplace = (sqrt(pp .^ 2 + pp' .^ 2) .^ alpha) / alpha;
 
 
 % *****************************************************************************
 % Option 1: first-order time splitting spectral approximation
 % *****************************************************************************
+
+% kineticPhase = exp(-1i * veps^(alpha - 1) * fLaplace * dt);
+% potentialPhase = exp(-1i / veps * V * dt);
 % for i = 1 : nt
-%     %-----------------------------------------
-%     % step 1. The Schrodinger
-%     %-----------------------------------------
 %     uu = fft2(uu);
-%     uu = exp( -1i * (veps ^ (alpha - 1)) * fLaplace * dt ) .* uu;
+%     uu = kineticPhase .* uu;
 %     uu = ifft2(uu);
-%     %-----------------------------------------
-%     % step 2. The external potential
-%     %-----------------------------------------
-%     uu = exp( -1i / veps * V * dt) .* uu;
+%     uu = potentialPhase .* uu;
 % end
 
 % *****************************************************************************
 % Option 2: Strang splitting spectral approximation
 % *****************************************************************************
+
+kineticPhase = exp(-1i * veps^(alpha - 1) * fLaplace * dt);
+potentialHalfPhase = exp(-1i / veps * V * dt / 2);
 for i = 1 : nt
-    %-----------------------------------------
-    % step 1. The external potential
-    %-----------------------------------------
-    uu = exp( -1i / veps * V * dt / 2) .* uu;
-    %-----------------------------------------
-    % step 2. The Schrodinger
-    %-----------------------------------------
+    uu = potentialHalfPhase .* uu;
     uu = fft2(uu);
-    uu = exp( -1i * (veps ^ (alpha - 1)) * fLaplace * dt) .* uu;
+    uu = kineticPhase .* uu;
     uu = ifft2(uu);
-    %-----------------------------------------
-    % step 3. The external potential
-    %-----------------------------------------
-    uu = exp( -1i / veps * V * dt / 2) .* uu;
+    uu = potentialHalfPhase .* uu;
 end
 
 end

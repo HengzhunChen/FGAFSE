@@ -44,38 +44,28 @@ fLaplace = (abs(k) .^ alpha) / alpha;
 % ************************************************************
 % Option 1: first-order time splitting spectral approximation
 % ************************************************************
-% for i = 1 : nt
-%     %-----------------------------------------
-%     % step 1. The Laplace
-%     %-----------------------------------------
-%     u = fft(u);
-%     u = exp( -1i * (veps ^ (alpha - 1)) * fLaplace * dt) .* u;
-%     u = ifft(u);
-%     %-----------------------------------------
-%     % step 2. The external potential
-%     %-----------------------------------------
-%     u = exp( -1i / veps * V * dt) .* u;
-% end
 
+% kineticPhase = exp(-1i * veps^(alpha - 1) * fLaplace * dt);
+% potentialPhase = exp(-1i / veps * V * dt);
+% for i = 1 : nt
+%     u = fft(u);
+%     u = kineticPhase .* u;
+%     u = ifft(u);
+%     u = potentialPhase .* u;
+% end
 
 % ***********************************************************
 % Option 2: Strang splitting spectral approximation
 % ***********************************************************
+
+kineticPhase = exp(-1i * veps^(alpha - 1) * fLaplace * dt);
+potentialHalfPhase = exp(-1i / veps * V * dt / 2);
 for i = 1 : nt
-    %-----------------------------------------
-    % step 1. The external potential
-    %-----------------------------------------
-    u = exp( -1i / veps * V * dt / 2) .* u;
-    %-----------------------------------------
-    % step 2. The Laplace
-    %-----------------------------------------
+    u = potentialHalfPhase .* u;
     u = fft(u);
-    u = exp( -1i * (veps ^ (alpha - 1)) * fLaplace * dt) .* u;
+    u = kineticPhase .* u;
     u = ifft(u);
-    %-----------------------------------------
-    % step 3. The external potential
-    %-----------------------------------------
-    u = exp( -1i / veps * V * dt / 2) .* u;
+    u = potentialHalfPhase .* u;
 end
 
 end
