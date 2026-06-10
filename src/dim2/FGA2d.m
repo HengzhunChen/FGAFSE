@@ -63,7 +63,10 @@ u0 = initWave(xx, xx', veps);
 [A0, S0, Q0, P0, nGB] = initial_decomposition_2d(u0, veps, dy, ny, kernelSize, nydq);
 DzQ0 = repmat([1, 0, 0, 1], nGB, 1);
 DzP0 = repmat( -1i * [1, 0, 0, 1], nGB, 1);
-[A, S, Q, P] = time_evolution(A0, S0, Q0, P0, DzQ0, DzP0, dt, finalTime, alpha, @odes_delta_2d, potential, veps);
+delta = veps;
+odes = @(Q, P, DzQ, DzP) ...
+    odes_delta_2d(Q, P, DzQ, DzP, alpha, delta, potential);
+[A, S, Q, P] = time_evolution(A0, S0, Q0, P0, DzQ0, DzP0, dt, finalTime, odes);
 ww = wave_reconstruction_2d(veps, A, S, Q, P, nGB, dx, nx, kernelSize);
     
 end

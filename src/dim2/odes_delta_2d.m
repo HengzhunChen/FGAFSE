@@ -1,13 +1,13 @@
-function [DQ, DP, DS, DlogA, DtDzQ, DtDzP] = odes_delta_2d(Q, P, DzQ, DzP, alpha, potential, veps)
+function [DQ, DP, DS, DlogA, DtDzQ, DtDzP] = odes_delta_2d(Q, P, DzQ, DzP, alpha, delta, potential)
 % ODES_DELTA_2D Compute derivative values of modified FGA odes at Q, P, DzQ, DzP.
 %     Inputs:
 %         Q, P, DzQ, DzP -- Gaussian parameters in FGA
 %         alpha          -- order of fractional operator
+%         delta          -- regularization parameter
 %         potential      -- function handle of potential and its derivatives
 %                           [V, DV, D2V] = potential(Q1, Q2)
-%         veps           -- scaled Planck constant
 %     Outputs: 
-%         DQ, DP, DS, DlogA, DtDZQ, DtDzP
+%         DQ, DP, DS, DlogA, DtDzQ, DtDzP
 %                        -- Derivative of FGA odes at Q, P, DzQ, DzP
 %     Note: DS, DlogA are scalars in shape of (nGB, 1),
 %           DQ, DP are matrices in shape of (nGB, 2),
@@ -20,89 +20,63 @@ function [DQ, DP, DS, DlogA, DtDzQ, DtDzP] = odes_delta_2d(Q, P, DzQ, DzP, alpha
 %  This file is distributed under the terms of the MIT License.
 
 
-[V, DV, D2V] = potential(Q(:, 1), Q(:, 2));
-
+P2 = sum(P.^2, 2);
+D2T = zeros(size(DzP));
 if alpha == 2
-    DQ = P;
-    DP = -DV;
-    DS = 0.5 * (sum(P.^2, 2)) - V;
-    
-    DtDzQ = DzP;
-    DtDzP = zeros(size(DzP));
-    % NOTE: DtDzP = -DzQ * D2V;
-    DtDzP(:, 1) = -( DzQ(:, 1) .* D2V(:, 1) + DzQ(:, 2) .* D2V(:, 3) );
-    DtDzP(:, 2) = -( DzQ(:, 1) .* D2V(:, 2) + DzQ(:, 2) .* D2V(:, 4) );
-    DtDzP(:, 3) = -( DzQ(:, 3) .* D2V(:, 1) + DzQ(:, 4) .* D2V(:, 3) );
-    DtDzP(:, 4) = -( DzQ(:, 3) .* D2V(:, 2) + DzQ(:, 4) .* D2V(:, 4) );
-    
-    Z = DzQ + 1i * DzP;
-    detZ = Z(:, 1) .* Z(:, 4) - Z(:, 2) .* Z(:, 3);
-    Z_inv = zeros(size(Z));
-    Z_inv(:, 1) = Z(:, 4);
-    Z_inv(:, 2) = -Z(:, 2);
-    Z_inv(:, 3) = -Z(:, 3);
-    Z_inv(:, 4) = Z(:, 1);
-    eps = 1e-12;
-    Z_inv = Z_inv ./ (detZ - min( sign(abs(detZ) - eps), 0 ) * eps);
-    
-    DZ = DtDzQ + 1i * DtDzP;
-    % NOTE: DlogA = 0.5 * Z_inv * DZ;
-    DlogA = 0.5 * ( Z_inv(:, 1) .* DZ(:, 1) + Z_inv(:, 2) .* DZ(:, 3) +...
-                    Z_inv(:, 3) .* DZ(:, 2) + Z_inv(:, 4) .* DZ(:, 4) );
+    % Recover the unregularized quadratic kinetic energy exactly.
+    Pdelta = P2;
+    kineticScale = ones(size(P2));
+    D2T(:, 1) = 1;
+    D2T(:, 4) = 1;
 else
-    delta = veps;  % default value
-    % delta = veps ^ (3/5);  % this option comes from current theorectical analysis
-
-    Pdelta = sum(P.^2, 2) + delta^2;  % shape: (nGB, 1)
-
-    DQ = Pdelta .^ ((alpha-2)/2) .* P;
-    DP = -DV;
-    DS = sum(P.^2, 2) .* Pdelta.^((alpha-2)/2) - (1 / alpha) * Pdelta.^(alpha/2) - V;
-
-    % ---------------------------------------------------------------------------------------
-    % NOTE: Be careful with the derivative calculation here to match the dimension.
-    %   DtDzQ 
-    % = (alpha - 2) * Pdelta^((alpha-4)/2) * DzP * P * P' + Pdelta^((alpha-2)/2) * DzP
-    % = Pdelta^((alpha-2)/2) * DzP * ( (alpha-2) * Pdelta^(-1) * P * P' + eye(2) )
-    % = scalar * DzP * temp
-    % temp = (alpha-2) * Pdelta^(-1) * P * P' + eye(2), scalar = Pdelta^((alpha-2)/2),
-    % temp is a symmetric matrix.
-    % ---------------------------------------------------------------------------------------
-    temp = zeros(size(DzQ));
-    scal = (alpha - 2) ./ Pdelta;
-    temp(:, 1) = scal .* P(:, 1) .* P(:, 1) + 1.0;
-    temp(:, 2) = scal .* P(:, 1) .* P(:, 2);
-    temp(:, 3) = temp(:, 2);
-    temp(:, 4) = scal .* P(:, 2) .* P(:, 2) + 1.0;
-    DtDzQ = zeros(size(DzQ));
-    scalar = Pdelta .^ ((alpha-2)/2);
-    DtDzQ(:, 1) = scalar .* ( DzP(:, 1) .* temp(:, 1) + DzP(:, 2) .* temp(:, 3) );
-    DtDzQ(:, 2) = scalar .* ( DzP(:, 1) .* temp(:, 2) + DzP(:, 2) .* temp(:, 4) );
-    DtDzQ(:, 3) = scalar .* ( DzP(:, 3) .* temp(:, 1) + DzP(:, 4) .* temp(:, 2) );
-    DtDzQ(:, 4) = scalar .* ( DzP(:, 3) .* temp(:, 2) + DzP(:, 4) .* temp(:, 4) );
-
-
-    DtDzP = zeros(size(DzP));
-    % NOTE: DtDzP = -DzQ * D2V;
-    DtDzP(:, 1) = -( DzQ(:, 1) .* D2V(:, 1) + DzQ(:, 2) .* D2V(:, 3) );
-    DtDzP(:, 2) = -( DzQ(:, 1) .* D2V(:, 2) + DzQ(:, 2) .* D2V(:, 4) );
-    DtDzP(:, 3) = -( DzQ(:, 3) .* D2V(:, 1) + DzQ(:, 4) .* D2V(:, 3) );
-    DtDzP(:, 4) = -( DzQ(:, 3) .* D2V(:, 2) + DzQ(:, 4) .* D2V(:, 4) );
-
-    Z = DzQ + 1i * DzP;
-    detZ = Z(:, 1) .* Z(:, 4) - Z(:, 2) .* Z(:, 3);
-    Z_inv = zeros(size(Z));
-    Z_inv(:, 1) = Z(:, 4);
-    Z_inv(:, 2) = -Z(:, 2);
-    Z_inv(:, 3) = -Z(:, 3);
-    Z_inv(:, 4) = Z(:, 1);
-    eps = 1e-12;
-    Z_inv = Z_inv ./ (detZ - min( sign(abs(detZ) - eps), 0 ) * eps);
-
-    DZ = DtDzQ + 1i * DtDzP;
-    % NOTE: DlogA = 0.5 * trace(Z_inv * DZ);
-    DlogA = 0.5 * ( Z_inv(:, 1) .* DZ(:, 1) + Z_inv(:, 2) .* DZ(:, 3) + ...
-                    Z_inv(:, 3) .* DZ(:, 2) + Z_inv(:, 4) .* DZ(:, 4) );
+    Pdelta = P2 + delta^2;
+    kineticScale = Pdelta.^((alpha-2)/2);
+    kineticCorrection = (alpha - 2) * kineticScale ./ Pdelta;
+    D2T(:, 1) = kineticScale + kineticCorrection .* P(:, 1).^2;
+    D2T(:, 2) = kineticCorrection .* P(:, 1) .* P(:, 2);
+    D2T(:, 3) = D2T(:, 2);
+    D2T(:, 4) = kineticScale + kineticCorrection .* P(:, 2).^2;
 end
 
+[V, DV, D2V] = potential(Q(:, 1), Q(:, 2));
+
+T = Pdelta.^(alpha/2) / alpha;
+DQ = kineticScale .* P;
+DP = -DV;
+DS = sum(P .* DQ, 2) - T - V;
+
+DtDzQ = multiply_2x2(DzP, D2T);
+DtDzP = -multiply_2x2(DzQ, D2V);
+
+Z = DzQ + 1i * DzP;
+detZ = Z(:, 1) .* Z(:, 4) - Z(:, 2) .* Z(:, 3);
+zTolerance = 1e-12;
+if any(isnan(detZ) | isinf(detZ), 'all') || any(abs(detZ) < zTolerance, 'all')
+    error('FGAFSE:SingularZ', 'Numerical loss of invertibility in Z.');
+end
+
+DZ = DtDzQ + 1i * DtDzP;
+DlogA = 0.5 * trace_inverse_product_2x2(Z, DZ, detZ);
+
+end
+
+% -------------------------------------------------------------------
+% Helper functions
+% -------------------------------------------------------------------
+
+function C = multiply_2x2(A, B)
+    % Multiply batches of flattened row-major 2-by-2 matrices.
+
+    C = zeros(size(A));
+    C(:, 1) = A(:, 1) .* B(:, 1) + A(:, 2) .* B(:, 3);
+    C(:, 2) = A(:, 1) .* B(:, 2) + A(:, 2) .* B(:, 4);
+    C(:, 3) = A(:, 3) .* B(:, 1) + A(:, 4) .* B(:, 3);
+    C(:, 4) = A(:, 3) .* B(:, 2) + A(:, 4) .* B(:, 4);
+end
+
+function value = trace_inverse_product_2x2(A, B, detA)
+    % Compute trace(A^{-1} B) for flattened row-major 2-by-2 matrices.
+
+    value = ( A(:, 4) .* B(:, 1) - A(:, 2) .* B(:, 3) ...
+        - A(:, 3) .* B(:, 2) + A(:, 1) .* B(:, 4) ) ./ detA;
 end

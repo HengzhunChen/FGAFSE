@@ -38,7 +38,9 @@ x = 0 : dx : right_x;  % mesh on axis x, left endpoint is 0
 x = x(1 : end-1)';  % shape: (nx, 1)
 u0 = initWave(x, veps);
 
-odes = @odes_delta_1d;
+delta = veps;
+odes = @(Q, P, DzQ, DzP) ...
+    odes_delta_1d(Q, P, DzQ, DzP, alpha, delta, potential);
 
 % Time evolution
 [A0, S0, Q0, P0, nGB] = initial_decomposition_1d(u0, veps, dy, ny, kernelSize, nydq);
@@ -47,7 +49,7 @@ DzP0 = -1i * ones(size(P0));
 Q = zeros(nGB, nt);
 P = zeros(nGB, nt);
 for tt = 1 : nt
-    [A0, S0, Q0, P0, DzQ0, DzP0] = time_evolution(A0, S0, Q0, P0, DzQ0, DzP0, dt, dt, alpha, odes, potential, veps);
+    [A0, S0, Q0, P0, DzQ0, DzP0] = time_evolution(A0, S0, Q0, P0, DzQ0, DzP0, dt, dt, odes);
     Q(:, tt) = Q0;
     P(:, tt) = P0;
 end

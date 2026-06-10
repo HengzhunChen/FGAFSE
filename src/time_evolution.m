@@ -1,23 +1,20 @@
-function [A, S, Q, P, DzQ, DzP] = time_evolution(A0, S0, Q0, P0, DzQ0, DzP0, dt, finalTime, alpha, Odes, potential, veps)
+function [A, S, Q, P, DzQ, DzP] = time_evolution(A0, S0, Q0, P0, DzQ0, DzP0, dt, finalTime, odes)
 % TIME_EVOLUTION function to evolve the FGA ODEs using 4-th order 
-% Runge-Kutta (RK) method for 1-dimensional problem
+% Runge-Kutta (RK) method.
 %    Inputs:
 %        A0, S0, Q0, P0, DzQ0, DzP0 
 %                  -- initial FGA parameter arrays of size nGB
 %        dt        -- maximum step size of time t
 %        finalTime -- duration of time evolution
-%        alpha     -- order of fractional operator
-%        Odes      -- function handle of the FGA ODES
+%        odes      -- closed function handle of the FGA ODEs
 %                     [DQ, DP, DS, DlogA, DtDzQ, DtDzP] = ...
-%                             Odes(Q, P, DzQ, DzP, alpha, potential)
-%        potential -- function handle of potential and its derivatives
-%        veps      -- scaled Planck constant
+%                             odes(Q, P, DzQ, DzP)
 %    Outputs:
 %        A, S, Q, P, DzQ, DzP 
 %                  -- FGA parameter arrays of size nGB
-%    A, S are scalar while Q, P may be vectors.
+%    DzQ and DzP are returned for diagnostics or continued evolution.
 %
-%    See also FGA1d, odes_1d.
+%    See also FGA1d, FGA2d.
 
 %  Copyright (c) 2024 Hengzhun Chen, Fudan University,
 %                     Lihui Chai, Sun Yat-sen University.
@@ -25,12 +22,12 @@ function [A, S, Q, P, DzQ, DzP] = time_evolution(A0, S0, Q0, P0, DzQ0, DzP0, dt,
 
 
 % Initialization
-Qi = Q0;
-Pi = P0;
-Si = S0;
-logAi = log(A0);
-DzQi = DzQ0;
-DzPi = DzP0;
+Qn = Q0;
+Pn = P0;
+Sn = S0;
+logAn = zeros(size(A0));
+DzQn = DzQ0;
+DzPn = DzP0;
 
 % Main loop
 numFullSteps = floor(finalTime / dt);
@@ -48,47 +45,43 @@ for tt = 1 : numSteps
     end
 
     % find slope vector k1
-    [kQ1, kP1, kS1, klogA1, kDzQ1, kDzP1] = ...
-            Odes(Qi, Pi, DzQi, DzPi, alpha, potential, veps);
+    [kQ1, kP1, kS1, klogA1, kDzQ1, kDzP1] = odes(Qn, Pn, DzQn, DzPn);
     
     % find slope vector k2
-    Q = Qi + kQ1 * (stepSize/2);
-    P = Pi + kP1 * (stepSize/2);
-    DzQ = DzQi + kDzQ1 * (stepSize/2);
-    DzP = DzPi + kDzP1 * (stepSize/2);
-    [kQ2, kP2, kS2, klogA2, kDzQ2, kDzP2] = ...
-            Odes(Q, P, DzQ, DzP, alpha, potential, veps);
+    Q = Qn + kQ1 * (stepSize/2);
+    P = Pn + kP1 * (stepSize/2);
+    DzQ = DzQn + kDzQ1 * (stepSize/2);
+    DzP = DzPn + kDzP1 * (stepSize/2);
+    [kQ2, kP2, kS2, klogA2, kDzQ2, kDzP2] = odes(Q, P, DzQ, DzP);
     
     % find slope vector k3       
-    Q = Qi + kQ2 * (stepSize/2);
-    P = Pi + kP2 * (stepSize/2);
-    DzQ = DzQi + kDzQ2 * (stepSize/2);
-    DzP = DzPi + kDzP2 * (stepSize/2);
-    [kQ3, kP3, kS3, klogA3, kDzQ3, kDzP3] = ...
-            Odes(Q, P, DzQ, DzP, alpha, potential, veps);
+    Q = Qn + kQ2 * (stepSize/2);
+    P = Pn + kP2 * (stepSize/2);
+    DzQ = DzQn + kDzQ2 * (stepSize/2);
+    DzP = DzPn + kDzP2 * (stepSize/2);
+    [kQ3, kP3, kS3, klogA3, kDzQ3, kDzP3] = odes(Q, P, DzQ, DzP);
     
     % find slope vector k4
-    Q = Qi + kQ3 * stepSize;
-    P = Pi + kP3 * stepSize;
-    DzQ = DzQi + kDzQ3 * stepSize;
-    DzP = DzPi + kDzP3 * stepSize;
-    [kQ4, kP4, kS4, klogA4, kDzQ4, kDzP4] = ...
-            Odes(Q, P, DzQ, DzP, alpha, potential, veps);
+    Q = Qn + kQ3 * stepSize;
+    P = Pn + kP3 * stepSize;
+    DzQ = DzQn + kDzQ3 * stepSize;
+    DzP = DzPn + kDzP3 * stepSize;
+    [kQ4, kP4, kS4, klogA4, kDzQ4, kDzP4] = odes(Q, P, DzQ, DzP);
 
     % evolution
-    Qi = Qi + (kQ1 + 2 * kQ2 + 2 * kQ3 + kQ4) * (stepSize/6);
-    Pi = Pi + (kP1 + 2 * kP2 + 2 * kP3 + kP4) * (stepSize/6);
-    Si = Si + (kS1 + 2 * kS2 + 2 * kS3 + kS4) * (stepSize/6);
-    DzQi = DzQi + (kDzQ1 + 2 * kDzQ2 + 2 * kDzQ3 + kDzQ4) * (stepSize/6);
-    DzPi = DzPi + (kDzP1 + 2 * kDzP2 + 2 * kDzP3 + kDzP4) * (stepSize/6);
-    logAi = logAi + (klogA1 + 2 * klogA2 + 2 * klogA3 + klogA4) * (stepSize/6);
+    Qn = Qn + (kQ1 + 2 * kQ2 + 2 * kQ3 + kQ4) * (stepSize/6);
+    Pn = Pn + (kP1 + 2 * kP2 + 2 * kP3 + kP4) * (stepSize/6);
+    Sn = Sn + (kS1 + 2 * kS2 + 2 * kS3 + kS4) * (stepSize/6);
+    DzQn = DzQn + (kDzQ1 + 2 * kDzQ2 + 2 * kDzQ3 + kDzQ4) * (stepSize/6);
+    DzPn = DzPn + (kDzP1 + 2 * kDzP2 + 2 * kDzP3 + kDzP4) * (stepSize/6);
+    logAn = logAn + (klogA1 + 2 * klogA2 + 2 * klogA3 + klogA4) * (stepSize/6);
 end
 
-Q = Qi;
-P = Pi;
-S = Si;
-A = exp(logAi);
-DzQ = DzQi;
-DzP = DzPi;
+Q = Qn;
+P = Pn;
+S = Sn;
+A = A0 .* exp(logAn);
+DzQ = DzQn;
+DzP = DzPn;
 
 end
