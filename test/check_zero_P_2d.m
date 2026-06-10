@@ -1,5 +1,5 @@
 function check_zero_P_2d(alpha, finalTime, vepsExp, right_x, delta, initWave, potential)
-% CHEcK_ZERO_P_2D Check the existence of zero points in the trajectory of |P(t)| in 2 dimension.
+% CHECK_ZERO_P_2D Check the existence of zero points in the trajectory of |P(t)| in 2 dimension.
 %    Inputs:
 %        alpha     -- order of fractional operator
 %        finalTime -- final time of evolution
@@ -55,31 +55,42 @@ Pi = zeros(size(Qi));
 
 dt = 1e-2;
 halfTime = finalTime / 2;
-Nt = floor(halfTime / dt + 1e-6);
+numFullSteps = floor(halfTime / dt);
+remainingTime = halfTime - numFullSteps * dt;
+timeTolerance = 1e-12;
+if remainingTime <= timeTolerance
+    remainingTime = 0;
+end
+numSteps = numFullSteps + (remainingTime > 0);
 
 % Main loop
-for tt = 1 : Nt
+for tt = 1 : numSteps
+    stepSize = dt;
+    if tt > numFullSteps
+        stepSize = remainingTime;
+    end
+
     % find slope vector k1
     [kQ1, kP1] = inverse_odes2d(Qi, Pi, alpha, potential, delta);
     
     % find slope vector k2
-    Q = Qi + kQ1 * dt / 2;
-    P = Pi + kP1 * dt / 2;
+    Q = Qi + kQ1 * stepSize / 2;
+    P = Pi + kP1 * stepSize / 2;
     [kQ2, kP2] = inverse_odes2d(Q, P, alpha, potential, delta);
     
     % find slope vector k3       
-    Q = Qi + kQ2 * dt / 2;
-    P = Pi + kP2 * dt / 2;
+    Q = Qi + kQ2 * stepSize / 2;
+    P = Pi + kP2 * stepSize / 2;
     [kQ3, kP3] = inverse_odes2d(Q, P, alpha, potential, delta);
     
     % find slope vector k4
-    Q = Qi + kQ3 * dt;
-    P = Pi + kP3 * dt;
+    Q = Qi + kQ3 * stepSize;
+    P = Pi + kP3 * stepSize;
     [kQ4, kP4] = inverse_odes2d(Q, P, alpha, potential, delta);
 
     % evolution
-    Qi = Qi + (kQ1 + 2 * kQ2 + 2 * kQ3 + kQ4) * dt / 6;
-    Pi = Pi + (kP1 + 2 * kP2 + 2 * kP3 + kP4) * dt / 6;
+    Qi = Qi + (kQ1 + 2 * kQ2 + 2 * kQ3 + kQ4) * stepSize / 6;
+    Pi = Pi + (kP1 + 2 * kP2 + 2 * kP3 + kP4) * stepSize / 6;
 end
 
 Pi1 = Pi(:, 1); Pi2 = Pi(:, 2);

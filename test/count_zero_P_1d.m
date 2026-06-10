@@ -47,7 +47,7 @@ DzP0 = -1i * ones(size(P0));
 Q = zeros(nGB, nt);
 P = zeros(nGB, nt);
 for tt = 1 : nt
-    [A0, S0, Q0, P0, DzQ0, DzP0] = time_evolution(A0, S0, Q0, P0, DzQ0, DzP0, dt, 1, alpha, odes, potential, veps);
+    [A0, S0, Q0, P0, DzQ0, DzP0] = time_evolution(A0, S0, Q0, P0, DzQ0, DzP0, dt, dt, alpha, odes, potential, veps);
     Q(:, tt) = Q0;
     P(:, tt) = P0;
 end

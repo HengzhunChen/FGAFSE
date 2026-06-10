@@ -37,7 +37,6 @@ nydq = floor( 2^(-vepsExp/2) / 2 );
 kernelSize = floor( 2^(-vepsExp/2) ) * 2^3;  
 
 dt = 1e-2;
-nt = floor( finalTime / dt + 1e-6);
 
 % Initialization
 x = 0 : dx : right_x;  % mesh on axis x, left endpoint is 0
@@ -50,7 +49,7 @@ odes = @odes_delta_1d;
 [A0, S0, Q0, P0, nGB] = initial_decomposition_1d(u0, veps, dy, ny, kernelSize, nydq); 
 DzQ0 = ones(size(Q0));
 DzP0 = -1i * ones(size(P0));
-[A, S, Q, P] = time_evolution(A0, S0, Q0, P0, DzQ0, DzP0, dt, nt, alpha, odes, potential, veps);
+[A, S, Q, P] = time_evolution(A0, S0, Q0, P0, DzQ0, DzP0, dt, finalTime, alpha, odes, potential, veps);
 w = wave_reconstruction_1d(veps, A, S, Q, P, nGB, x, dx, nx, kernelSize);
 
 end

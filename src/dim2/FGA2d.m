@@ -37,7 +37,6 @@ nydq = floor( 2^(-vepsExp/2) / 2 );
 kernelSize = floor( 2^(-vepsExp/2) ) * 8;
 
 dt = 1e-2;
-nt = floor( finalTime / dt + 1e-6 );
 
 % Initialization
 
@@ -64,7 +63,7 @@ u0 = initWave(xx, xx', veps);
 [A0, S0, Q0, P0, nGB] = initial_decomposition_2d(u0, veps, dy, ny, kernelSize, nydq);
 DzQ0 = repmat([1, 0, 0, 1], nGB, 1);
 DzP0 = repmat( -1i * [1, 0, 0, 1], nGB, 1);
-[A, S, Q, P] = time_evolution(A0, S0, Q0, P0, DzQ0, DzP0, dt, nt, alpha, @odes_delta_2d, potential, veps);
+[A, S, Q, P] = time_evolution(A0, S0, Q0, P0, DzQ0, DzP0, dt, finalTime, alpha, @odes_delta_2d, potential, veps);
 ww = wave_reconstruction_2d(veps, A, S, Q, P, nGB, dx, nx, kernelSize);
     
 end

@@ -8,7 +8,7 @@ function [uu, xx] = TSSA2d(alpha, vepsExp, finalTime, right_x, dt, initWavefun, 
 %         finalTime   -- final time of evolution
 %         right_x     -- right endpoints of domain of x1 and x2
 %                        left endpoints of domain of x1 and x2 is 0
-%         dt          -- mesh size of axis t
+%         dt          -- maximum time step
 %         initWavefun -- function handle for initial wavefunction
 %                        u0 = initWavefun(X, Y, veps)
 %         potential   -- function handle of potential 
@@ -27,9 +27,15 @@ function [uu, xx] = TSSA2d(alpha, vepsExp, finalTime, right_x, dt, initWavefun, 
 
 veps = 2 ^ vepsExp;
 
+if dt <= 0
+    error('FGAFSE:InvalidTimeStep', 'Time step dt must be positive.');
+end
+if finalTime < 0
+    error('FGAFSE:InvalidFinalTime', 'Final time must be nonnegative.');
+end
+
 dx = veps;
 nx = floor((right_x - 0) / dx);
-nt = floor( finalTime / dt + 1e-6);
 
 % Initialization
 
@@ -60,6 +66,13 @@ p = [0 : nx/2 - 1, -nx/2 : -1] * 2 * pi / (right_x - 0);  % shape: (nx, 1)
 pp = p' * ones(1, nx);  % shape: (nx, nx)
 fLaplace = (sqrt(pp .^ 2 + pp' .^ 2) .^ alpha) / alpha;
 
+numFullSteps = floor(finalTime / dt);
+remainingTime = finalTime - numFullSteps * dt;
+timeTolerance = 1e-12;
+if remainingTime <= timeTolerance
+    remainingTime = 0;
+end
+numSteps = numFullSteps + (remainingTime > 0);
 
 % *****************************************************************************
 % Option 1: first-order time splitting spectral approximation
@@ -67,7 +80,12 @@ fLaplace = (sqrt(pp .^ 2 + pp' .^ 2) .^ alpha) / alpha;
 
 % kineticPhase = exp(-1i * veps^(alpha - 1) * fLaplace * dt);
 % potentialPhase = exp(-1i / veps * V * dt);
-% for i = 1 : nt
+% for i = 1 : numSteps
+%     if i > numFullSteps
+%         kineticPhase = exp(-1i * veps^(alpha - 1) * fLaplace * remainingTime);
+%         potentialPhase = exp(-1i / veps * V * remainingTime);
+%     end
+%
 %     uu = fft2(uu);
 %     uu = kineticPhase .* uu;
 %     uu = ifft2(uu);
@@ -80,7 +98,12 @@ fLaplace = (sqrt(pp .^ 2 + pp' .^ 2) .^ alpha) / alpha;
 
 kineticPhase = exp(-1i * veps^(alpha - 1) * fLaplace * dt);
 potentialHalfPhase = exp(-1i / veps * V * dt / 2);
-for i = 1 : nt
+for i = 1 : numSteps
+    if i > numFullSteps
+        kineticPhase = exp(-1i * veps^(alpha - 1) * fLaplace * remainingTime);
+        potentialHalfPhase = exp(-1i / veps * V * remainingTime / 2);
+    end
+
     uu = potentialHalfPhase .* uu;
     uu = fft2(uu);
     uu = kineticPhase .* uu;
