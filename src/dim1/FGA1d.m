@@ -1,4 +1,4 @@
-function [w, x] = FGA1d(alpha, vepsExp, finalTime, right_x, initWavefun, potential)
+function [w, x] = FGA1d(alpha, vepsExp, finalTime, right_x, initWavefun, potential, delta)
 % FGA1D Solver for 1-dim fractional Schrodinger equation with high frequency
 % wave using frozen Gaussian approximation (FGA) method.
 %    Inputs:
@@ -12,6 +12,8 @@ function [w, x] = FGA1d(alpha, vepsExp, finalTime, right_x, initWavefun, potenti
 %                       u0 = initWavefun(x, veps)
 %        potential   -- function handle of potential 
 %                       [V, DV, D2V] = potential(Q)
+%        delta       -- regularization parameter
+%                       default: delta = veps
 %    Outputs:
 %       x -- samples on [0, right_x] 
 %       w -- solution at (x, finalTime)
@@ -25,6 +27,10 @@ function [w, x] = FGA1d(alpha, vepsExp, finalTime, right_x, initWavefun, potenti
 
 veps = 2 ^ vepsExp;  % scaled Planck constant
 
+if nargin < 7 || isempty(delta)
+    delta = veps;
+end
+
 % Setup mesh grid
 dx = veps;
 nx = floor( (right_x - 0) / dx);
@@ -34,16 +40,16 @@ ny = nx;
 % number of y grid included in each stepsize of q, nydq := ny / nq, dq := dy * nqdq
 nydq = floor( 2^(-vepsExp/2) / 2 );  
 % number of points included in a Gaussian kernel
-kernelSize = floor( 2^(-vepsExp/2) ) * 2^3;  
+kernelSize = floor( 2^(-vepsExp/2) ) * 2^4;
 
-dt = 1e-2;
+% dt = 1e-3;
+dt = 1e-4;
 
 % Initialization
 x = 0 : dx : right_x;  % mesh on axis x, left endpoint is 0
 x = x(1 : end-1)';  % shape: (nx, 1)
 u0 = initWavefun(x, veps);
 
-delta = veps;
 odes = @(Q, P, DzQ, DzP) ...
     odes_delta_1d(Q, P, DzQ, DzP, alpha, delta, potential);
 

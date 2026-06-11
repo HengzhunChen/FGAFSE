@@ -1,9 +1,14 @@
 %% Test for functions of 1-dim FGA components work correctly
 
-right_x = 2;
-final_time = 0.5;
+% add functions into file path
+cd ../
+FGAFSE_startup();
+cd ./test
 
-vepsExp = -8;
+right_x = 3;
+final_time = 2;
+
+vepsExp = -9;
 veps = 2 ^ vepsExp;
 alpha = 1.2;
 dx = veps;
@@ -63,6 +68,19 @@ sgtitle(['\alpha = ', num2str(alpha), ', t = ', num2str(final_time), ...
 
 saveas(gcf, './figures/test1d.png', 'png');
 
+% compute the L2 norm of initial wavefunction
+x_init = linspace(0, right_x, 1000);
+u0_init = initWave(x_init, veps);
+L2_norm_u0 = sqrt(sum(abs(u0_init).^2) * (x_init(2) - x_init(1)));
+fprintf('L2 norm of initial wavefunction: %e\n', L2_norm_u0);
+
+% compute the L2 norm of the solution
+L2_norm_w = sqrt(sum(abs(w).^2) * dx);
+L2_norm_u = sqrt(sum(abs(u).^2) * dx);
+fprintf('L2 norm of FGA solution: %e\n', L2_norm_w);
+fprintf('L2 norm of TSSA solution: %e\n', L2_norm_u);
+
+
 % Test for counting zero points in trajectory P(t)
 count_zero_P_1d(alpha, final_time, vepsExp, right_x, @initWavefun, @potentialfun);
 
@@ -76,7 +94,9 @@ end
 
 
 function [V, DV, D2V] = potentialfun(Q)
-    V = 1 + cos(pi * Q);
-    DV = -pi * sin(pi * Q);
-    D2V = -(pi)^2 * cos(pi * Q);
+    a = 1;
+    b = 1.5;
+    V = a * (Q - b).^2;
+    DV = 2 * a * (Q - b);
+    D2V = 2 * a;
 end
