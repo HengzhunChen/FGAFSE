@@ -1,4 +1,4 @@
-function [ww, xx] = FGA2d(alpha, vepsExp, finalTime, right_x, initWave, potential)
+function [ww, xx] = FGA2d(alpha, vepsExp, finalTime, right_x, initWave, potential, delta)
 % FGA2D Solver for 2-dim fractional Schrodinger equation with high frequency
 % wave using frozen Gaussian approximation (FGA) method.
 %     Inputs:
@@ -11,6 +11,8 @@ function [ww, xx] = FGA2d(alpha, vepsExp, finalTime, right_x, initWave, potentia
 %                        u0 = initWavefun(X, Y, veps)
 %         potential   -- function handle of potential 
 %                        V = potential(Q1, Q2)
+%         delta       -- regularization parameter
+%                        default: delta = veps
 %     Outputs:
 %         xx -- coordinates of x1 axis on 2 dimension mesh grid(i.e., matrix)
 %               coordinates of x2 axis is xx';
@@ -25,6 +27,10 @@ function [ww, xx] = FGA2d(alpha, vepsExp, finalTime, right_x, initWave, potentia
 
 veps = 2 ^ vepsExp;  % veps: varepsilon, the scaled Planck constant 
 
+if nargin < 7 || isempty(delta)
+    delta = veps;
+end
+
 % Setup mesh grid
 dx = veps;
 nx = floor( (right_x - 0) / dx );  % number of mesh grids of x1, x2
@@ -34,7 +40,7 @@ ny = nx;  % number of mesh grids of y1, y2
 % number of y grid included in each stepsize of q, nydq := ny / dq, dq := ny * nydq
 nydq = floor( 2^(-vepsExp/2) / 2 );
 % numer of points included in a Gaussian kernel
-kernelSize = floor( 2^(-vepsExp/2) ) * 8;
+kernelSize = floor( 2^(-vepsExp/2) ) * 2^3;
 
 dt = 1e-2;
 
@@ -63,7 +69,6 @@ u0 = initWave(xx, xx', veps);
 [A0, S0, Q0, P0, nGB] = initial_decomposition_2d(u0, veps, dy, ny, kernelSize, nydq);
 DzQ0 = repmat([1, 0, 0, 1], nGB, 1);
 DzP0 = repmat( -1i * [1, 0, 0, 1], nGB, 1);
-delta = veps;
 odes = @(Q, P, DzQ, DzP) ...
     odes_delta_2d(Q, P, DzQ, DzP, alpha, delta, potential);
 [A, S, Q, P] = time_evolution(A0, S0, Q0, P0, DzQ0, DzP0, dt, finalTime, odes);

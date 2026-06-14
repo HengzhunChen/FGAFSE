@@ -1,4 +1,4 @@
-function error_decay_2d(alpha, vepsExp, right_x, finalTime, initWave, potential, figName)
+function error_decay_2d(alpha, vepsExp, right_x, finalTime, initWave, potential, figName, useCachedTSSA, deltaPower)
 % ERROR_DECAY_2D function to analyze the error decay rate of FGA for 2-dim
 % fractional Schrodinger equation with high-frequency wave, use TSSA method as
 % ground state.
@@ -14,6 +14,10 @@ function error_decay_2d(alpha, vepsExp, right_x, finalTime, initWave, potential,
 %        potential -- function handle of potential 
 %                     [V, DV, D2V] = potential(Q1, Q2)
 %        figName   -- figure name for plot of L2 error decay curve
+%        useCachedTSSA -- load saved TSSA results when available
+%                         false recomputes and overwrites saved results
+%        deltaPower -- power k in delta = veps ^ k
+%                      default: deltaPower = 1
 %
 %    See also FGA2d, TSSA2d.
 
@@ -68,14 +72,27 @@ function error_decay_2d(alpha, vepsExp, right_x, finalTime, initWave, potential,
 %
 % *****************************************************************************
 
+if nargin < 8
+    useCachedTSSA = false;
+end
+if nargin < 9 || isempty(deltaPower)
+    deltaPower = 1;
+end
+
 nalpha = length(alpha);  % number of alpha to test
 nveps = length(vepsExp);  % number of veps to test
 
 err_L2 = zeros(nalpha, nveps);
+time_FGA = zeros(nalpha, nveps);
+time_TSSA = zeros(nalpha, nveps);
 
 folder = './figures/error_decay';
 if ~exist(folder, 'file')
     mkdir(folder);
+end
+tssaFolder = './data/tssa_2d';
+if ~exist(tssaFolder, 'dir')
+    mkdir(tssaFolder);
 end
 old_png = folder + "/alpha*veps*.png";
 old_eps = folder + "/alpha*veps*.eps";
@@ -92,12 +109,31 @@ for i = 1 : nalpha
         % Solver computation
         % -------------------------------------------------        
         % FGA method, display error of initial decompsition
-        [w, xx_w] = FGA2d(alpha(i), vepsExp(j), finalTime, right_x, initWave, potential);
+        timer_FGA = tic;
+        delta = veps ^ deltaPower;
+        [w, xx_w] = FGA2d(alpha(i), vepsExp(j), finalTime, right_x, initWave, potential, delta);
+        time_FGA(i, j) = toc(timer_FGA);
+        fprintf('FGA2d time: %f seconds\n', time_FGA(i, j));
         
         % TSSA method, as ground truth
         % dt = veps;
         dt = veps ^ 2;
-        [u, xx_u] = TSSA2d(alpha(i), vepsExp(j), finalTime, right_x, dt, initWave, potential);
+        cacheFile = fullfile(tssaFolder, sprintf( ...
+            'alpha_%g_vepsExp_%d_T_%g_R_%g.mat', ...
+            alpha(i), vepsExp(j), finalTime, right_x));
+        timer_TSSA = tic;
+        if useCachedTSSA && exist(cacheFile, 'file')
+            cached = load(cacheFile, "u", "xx_u");
+            u = cached.u;
+            xx_u = cached.xx_u;
+            fprintf('Loaded TSSA2d result: %s\n', cacheFile);
+        else
+            [u, xx_u] = TSSA2d(alpha(i), vepsExp(j), finalTime, right_x, dt, initWave, potential);
+            save(cacheFile, "u", "xx_u");
+            fprintf('Saved TSSA2d result: %s\n', cacheFile);
+        end
+        time_TSSA(i, j) = toc(timer_TSSA);
+        fprintf('TSSA2d result time: %f seconds\n', time_TSSA(i, j));
  
         % test for convergence of TSSA method
         % dt = dt / 2;
@@ -212,7 +248,24 @@ for i = 1: nalpha
     end
     fprintf('\n')
 end
-save("L2_error.mat", "err_L2");
+
+fprintf("\nTable of FGA2d time in seconds\n");
+for i = 1: nalpha
+    for j = 1 : nveps
+        fprintf('%.2e ', time_FGA(i, j));
+    end
+    fprintf('\n')
+end
+
+fprintf("\nTable of TSSA2d result time in seconds\n");
+for i = 1: nalpha
+    for j = 1 : nveps
+        fprintf('%.2e ', time_TSSA(i, j));
+    end
+    fprintf('\n')
+end
+
+save("L2_error.mat", "err_L2", "time_FGA", "time_TSSA");
 
 % --------------------------------------
 % Plot error decay curves
@@ -240,7 +293,7 @@ txt_y = ylabel("$\log_2$($L^2$ error)");
 set(txt_x, "Interpreter", "latex")
 set(txt_y, "Interpreter", "latex")
 legend(leg_str, "Interpreter", "latex");
-% title(['L2 error with final time T = ', num2str(finalTime)]);
+title(['L^2 error with final time T = ', num2str(finalTime)]);
 hold off
 
 if isempty(figName)

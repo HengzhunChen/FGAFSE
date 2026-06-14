@@ -43,7 +43,7 @@ P2min = min(P2); P2max = max(P2);
 Q1min = min(Q1); Q1max = max(Q1);
 Q2min = min(Q2); Q2max = max(Q2);
 
-[~, DV, ~] = potential(Q1, Q1);
+[~, DV, ~] = potential(Q1, Q2);
 DV_norm = sqrt( DV(:, 1).^2 + DV(:, 2).^2 );
 index = DV_norm > 1e-8;
 Q1 = Q1(index);
@@ -96,12 +96,12 @@ end
 Pi1 = Pi(:, 1); Pi2 = Pi(:, 2);
 Qi1 = Qi(:, 1); Qi2 = Qi(:, 2);
 
-idx = P1min < Pi1 & Pi1 < P1max & P2min < Pi1 & Pi2 < P2max & ...
+idx = P1min < Pi1 & Pi1 < P1max & P2min < Pi2 & Pi2 < P2max & ...
       Q1min < Qi1 & Qi1 < Q1max & Q2min < Qi2 & Qi2 < Q2max;
 
 % Count for those trajectories go through |P|=0 and Q inside grid domain at half
 % time while their initial conditions are also inside the grid domain.
-cnt = length(idx);
+cnt = sum(idx);
 
 if cnt > 10
     fprintf('There are %d pair target initial conditions satisfying domain constraint.\n', cnt);

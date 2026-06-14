@@ -1,5 +1,10 @@
 %% Test for functions of 2-dim FGA components work correctly
 
+% add functions into file path
+cd ../
+FGAFSE_startup();
+cd ./test
+
 % parameters setting
 right_x = 2;
 final_time = 0.5;
@@ -72,7 +77,7 @@ function [V, DV, D2V] = potential(Q1, Q2)
 %               1st partial derivatives of V with respect to q1, q2
 %        D2V -- [DV_11, DV_12, DV_21, DV_22]
 %               2nd partial derivatives of V w.r.t q1, q1
-    V = ((Q1 - 0.5) .^ 2 + (Q2 - 0.5) .^ 2) / 2;
+    V = ((Q1 - 0.5).^2 + (Q2 - 0.5).^2) / 2;
     DV_1 = Q1 - 0.5;
     DV_2 = Q2 - 0.5;    
     DV = [DV_1, DV_2];
