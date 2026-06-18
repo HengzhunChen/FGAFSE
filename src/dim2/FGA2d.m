@@ -1,4 +1,4 @@
-function [ww, xx] = FGA2d(alpha, vepsExp, finalTime, right_x, initWave, potential, delta)
+function [ww, xx] = FGA2d(alpha, vepsExp, finalTime, right_x, initWave, potential_2d, delta, solver)
 % FGA2D Solver for 2-dim fractional Schrodinger equation with high frequency
 % wave using frozen Gaussian approximation (FGA) method.
 %     Inputs:
@@ -9,10 +9,12 @@ function [ww, xx] = FGA2d(alpha, vepsExp, finalTime, right_x, initWave, potentia
 %         right_x     -- right endpoint of domain of x1(x2)
 %         initWavefun -- function handle for initial wavefunction
 %                        u0 = initWavefun(X, Y, veps)
-%         potential   -- function handle of potential 
-%                        V = potential(Q1, Q2)
+%         potential_2d
+%                     -- function handle of potential
+%                        [V, DV, D2V] = potential_2d(Q1, Q2)
 %         delta       -- regularization parameter
 %                        default: delta = veps
+%         solver      -- ODE solver: 'rk4' (default) or 'symplectic'
 %     Outputs:
 %         xx -- coordinates of x1 axis on 2 dimension mesh grid(i.e., matrix)
 %               coordinates of x2 axis is xx';
@@ -31,6 +33,16 @@ if nargin < 7 || isempty(delta)
     delta = veps;
 end
 
+if nargin < 8 || isempty(solver)
+    solver = 'rk4';
+end
+switch solver
+    case 'rk4'
+        dt = 1e-2;
+    case {'symplectic', 'stormer-verlet'}
+        dt = 1e-3;
+end
+
 % Setup mesh grid
 dx = veps;
 nx = floor( (right_x - 0) / dx );  % number of mesh grids of x1, x2
@@ -41,8 +53,6 @@ ny = nx;  % number of mesh grids of y1, y2
 nydq = floor( 2^(-vepsExp/2) / 2 );
 % numer of points included in a Gaussian kernel
 kernelSize = floor( 2^(-vepsExp/2) ) * 2^3;
-
-dt = 1e-2;
 
 % Initialization
 
@@ -66,12 +76,19 @@ xx = x * ones(1, nx);
 u0 = initWave(xx, xx', veps);
 
 % Main loop
-[A0, S0, Q0, P0, nGB] = initial_decomposition_2d(u0, veps, dy, ny, kernelSize, nydq);
+[A0, S0, Q0, P0, nGB] = initial_decomposition_2d( ...
+    u0, veps, dy, ny, kernelSize, nydq);
 DzQ0 = repmat([1, 0, 0, 1], nGB, 1);
 DzP0 = repmat( -1i * [1, 0, 0, 1], nGB, 1);
+
 odes = @(Q, P, DzQ, DzP) ...
-    odes_delta_2d(Q, P, DzQ, DzP, alpha, delta, potential);
-[A, S, Q, P] = time_evolution(A0, S0, Q0, P0, DzQ0, DzP0, dt, finalTime, odes);
+    odes_delta_2d(Q, P, DzQ, DzP, alpha, delta, potential_2d);
+evalKinetic = @(P) kinetic_delta_2d(P, alpha, delta);
+evalPotential = @(Q) potential_2d(Q(:, 1), Q(:, 2));
+
+[A, S, Q, P] = time_evolution(A0, S0, Q0, P0, DzQ0, DzP0, ...
+    dt, finalTime, odes, solver, evalKinetic, evalPotential);
+
 ww = wave_reconstruction_2d(veps, A, S, Q, P, nGB, dx, nx, kernelSize);
     
 end

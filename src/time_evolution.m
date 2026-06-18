@@ -1,87 +1,55 @@
-function [A, S, Q, P, DzQ, DzP] = time_evolution(A0, S0, Q0, P0, DzQ0, DzP0, dt, finalTime, odes)
-% TIME_EVOLUTION function to evolve the FGA ODEs using 4-th order 
-% Runge-Kutta (RK) method.
+function [A, S, Q, P, DzQ, DzP] = time_evolution( ...
+        A0, S0, Q0, P0, DzQ0, DzP0, dt, finalTime, odes, solver, evalKinetic, evalPotential)
+% TIME_EVOLUTION Evolve the FGA ODEs with the selected time integrator.
 %    Inputs:
-%        A0, S0, Q0, P0, DzQ0, DzP0 
+%        A0, S0, Q0, P0, DzQ0, DzP0
 %                  -- initial FGA parameter arrays of size nGB
 %        dt        -- maximum step size of time t
 %        finalTime -- duration of time evolution
 %        odes      -- closed function handle of the FGA ODEs
 %                     [DQ, DP, DS, DlogA, DtDzQ, DtDzP] = ...
 %                             odes(Q, P, DzQ, DzP)
+%        solver    -- ODE solver: 'rk4' (default) or 'symplectic'
+%        evalKinetic
+%                  -- required for 'symplectic'; closed function handle
+%                     [T, DT, D2T] = evalKinetic(P)
+%        evalPotential
+%                  -- required for 'symplectic'; closed function handle
+%                     [V, DV, D2V] = evalPotential(Q)
+%                     It should adapt the dimension-specific user potential
+%                     to accept Q as an nGB-by-d array.
 %    Outputs:
-%        A, S, Q, P, DzQ, DzP 
+%        A, S, Q, P, DzQ, DzP
 %                  -- FGA parameter arrays of size nGB
 %    DzQ and DzP are returned for diagnostics or continued evolution.
 %
-%    See also FGA1d, FGA2d.
+%    See also TIME_EVOLUTION_RK4, TIME_EVOLUTION_SYMPLECTIC, FGA1d, FGA2d.
 
 %  Copyright (c) 2024 Hengzhun Chen, Fudan University,
 %                     Lihui Chai, Sun Yat-sen University.
 %  This file is distributed under the terms of the MIT License.
 
 
-% Initialization
-Qn = Q0;
-Pn = P0;
-Sn = S0;
-logAn = zeros(size(A0));
-DzQn = DzQ0;
-DzPn = DzP0;
-
-% Main loop
-numFullSteps = floor(finalTime / dt);
-remainingTime = finalTime - numFullSteps * dt;
-timeTolerance = 1e-12;
-if remainingTime <= timeTolerance
-    remainingTime = 0;
-end
-numSteps = numFullSteps + (remainingTime > 0);
-
-for tt = 1 : numSteps
-    stepSize = dt;
-    if tt > numFullSteps
-        stepSize = remainingTime;
-    end
-
-    % find slope vector k1
-    [kQ1, kP1, kS1, klogA1, kDzQ1, kDzP1] = odes(Qn, Pn, DzQn, DzPn);
-    
-    % find slope vector k2
-    Q = Qn + kQ1 * (stepSize/2);
-    P = Pn + kP1 * (stepSize/2);
-    DzQ = DzQn + kDzQ1 * (stepSize/2);
-    DzP = DzPn + kDzP1 * (stepSize/2);
-    [kQ2, kP2, kS2, klogA2, kDzQ2, kDzP2] = odes(Q, P, DzQ, DzP);
-    
-    % find slope vector k3       
-    Q = Qn + kQ2 * (stepSize/2);
-    P = Pn + kP2 * (stepSize/2);
-    DzQ = DzQn + kDzQ2 * (stepSize/2);
-    DzP = DzPn + kDzP2 * (stepSize/2);
-    [kQ3, kP3, kS3, klogA3, kDzQ3, kDzP3] = odes(Q, P, DzQ, DzP);
-    
-    % find slope vector k4
-    Q = Qn + kQ3 * stepSize;
-    P = Pn + kP3 * stepSize;
-    DzQ = DzQn + kDzQ3 * stepSize;
-    DzP = DzPn + kDzP3 * stepSize;
-    [kQ4, kP4, kS4, klogA4, kDzQ4, kDzP4] = odes(Q, P, DzQ, DzP);
-
-    % evolution
-    Qn = Qn + (kQ1 + 2 * kQ2 + 2 * kQ3 + kQ4) * (stepSize/6);
-    Pn = Pn + (kP1 + 2 * kP2 + 2 * kP3 + kP4) * (stepSize/6);
-    Sn = Sn + (kS1 + 2 * kS2 + 2 * kS3 + kS4) * (stepSize/6);
-    DzQn = DzQn + (kDzQ1 + 2 * kDzQ2 + 2 * kDzQ3 + kDzQ4) * (stepSize/6);
-    DzPn = DzPn + (kDzP1 + 2 * kDzP2 + 2 * kDzP3 + kDzP4) * (stepSize/6);
-    logAn = logAn + (klogA1 + 2 * klogA2 + 2 * klogA3 + klogA4) * (stepSize/6);
+if nargin < 10 || isempty(solver)
+    solver = 'rk4';
 end
 
-Q = Qn;
-P = Pn;
-S = Sn;
-A = A0 .* exp(logAn);
-DzQ = DzQn;
-DzP = DzPn;
+solver = validatestring(solver, {'rk4', 'symplectic', 'stormer-verlet'});
+if strcmp(solver, 'stormer-verlet')
+    solver = 'symplectic';
+end
+
+switch solver
+    case 'rk4'
+        [A, S, Q, P, DzQ, DzP] = time_evolution_rk4( ...
+            A0, S0, Q0, P0, DzQ0, DzP0, dt, finalTime, odes);
+    case 'symplectic'
+        if nargin < 12 || isempty(evalKinetic) || isempty(evalPotential)
+            error('FGAFSE:MissingHamiltonianData', ...
+                'The symplectic solver requires kinetic and potential data functions.');
+        end
+        [A, S, Q, P, DzQ, DzP] = time_evolution_symplectic( ...
+            A0, S0, Q0, P0, DzQ0, DzP0, dt, finalTime, evalKinetic, evalPotential);
+end
 
 end

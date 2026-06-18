@@ -1,4 +1,4 @@
-function [w, x] = FGA1d(alpha, vepsExp, finalTime, right_x, initWavefun, potential, delta)
+function [w, x] = FGA1d(alpha, vepsExp, finalTime, right_x, initWavefun, potential_1d, delta, solver)
 % FGA1D Solver for 1-dim fractional Schrodinger equation with high frequency
 % wave using frozen Gaussian approximation (FGA) method.
 %    Inputs:
@@ -10,10 +10,12 @@ function [w, x] = FGA1d(alpha, vepsExp, finalTime, right_x, initWavefun, potenti
 %                       left endpoint of domian of x is 0
 %        initWavefun -- function handle for initial wavefunction
 %                       u0 = initWavefun(x, veps)
-%        potential   -- function handle of potential 
-%                       [V, DV, D2V] = potential(Q)
+%        potential_1d
+%                    -- function handle of potential
+%                       [V, DV, D2V] = potential_1d(Q)
 %        delta       -- regularization parameter
 %                       default: delta = veps
+%        solver      -- ODE solver: 'rk4' (default) or 'symplectic'
 %    Outputs:
 %       x -- samples on [0, right_x] 
 %       w -- solution at (x, finalTime)
@@ -31,6 +33,16 @@ if nargin < 7 || isempty(delta)
     delta = veps;
 end
 
+if nargin < 8 || isempty(solver)
+    solver = 'rk4';
+end
+switch solver
+    case 'rk4'
+        dt = 1e-3;
+    case {'symplectic', 'stormer-verlet'}
+        dt = 1e-3;
+end
+
 % Setup mesh grid
 dx = veps;
 nx = floor( (right_x - 0) / dx);
@@ -42,22 +54,22 @@ nydq = floor( 2^(-vepsExp/2) / 2 );
 % number of points included in a Gaussian kernel
 kernelSize = floor( 2^(-vepsExp/2) ) * 2^4;
 
-% dt = 1e-3;
-dt = 1e-4;
-
 % Initialization
 x = 0 : dx : right_x;  % mesh on axis x, left endpoint is 0
 x = x(1 : end-1)';  % shape: (nx, 1)
 u0 = initWavefun(x, veps);
 
 odes = @(Q, P, DzQ, DzP) ...
-    odes_delta_1d(Q, P, DzQ, DzP, alpha, delta, potential);
+    odes_delta_1d(Q, P, DzQ, DzP, alpha, delta, potential_1d);
+evalKinetic = @(P) kinetic_delta_1d(P, alpha, delta);
+evalPotential = @(Q) potential_1d(Q);
 
 % Main loop
 [A0, S0, Q0, P0, nGB] = initial_decomposition_1d(u0, veps, dy, ny, kernelSize, nydq); 
 DzQ0 = ones(size(Q0));
 DzP0 = -1i * ones(size(P0));
-[A, S, Q, P] = time_evolution(A0, S0, Q0, P0, DzQ0, DzP0, dt, finalTime, odes);
+[A, S, Q, P] = time_evolution(A0, S0, Q0, P0, DzQ0, DzP0, ...
+    dt, finalTime, odes, solver, evalKinetic, evalPotential);
 w = wave_reconstruction_1d(veps, A, S, Q, P, nGB, x, dx, nx, kernelSize);
 
 end

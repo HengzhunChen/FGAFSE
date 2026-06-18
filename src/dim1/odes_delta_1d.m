@@ -1,11 +1,11 @@
-function [DQ, DP, DS, DlogA, DtDzQ, DtDzP] = odes_delta_1d(Q, P, DzQ, DzP, alpha, delta, potential)
+function [DQ, DP, DS, DlogA, DtDzQ, DtDzP] = odes_delta_1d(Q, P, DzQ, DzP, alpha, delta, potential_1d)
 % ODES_DELTA_1D Compute derivative values of modified FGA odes at Q, P, DzQ, DzP
 %    Inputs:
 %        Q, P, DzQ, DzP -- Gaussian parameters in FGA
 %        alpha          -- order of fractional operator
 %        delta          -- regularization parameter
-%        potential      -- function handle of potential and its derivatives
-%                          [V, DV, D2V] = potential(Q)
+%        potential_1d   -- function handle of potential and its derivatives
+%                          [V, DV, D2V] = potential_1d(Q)
 %    Outputs:
 %        DQ, DP, DS, DlogA, DtDzQ, DtDzP
 %                       -- Derivative of FGA odes at Q, P, DzQ, DzP
@@ -17,28 +17,11 @@ function [DQ, DP, DS, DlogA, DtDzQ, DtDzP] = odes_delta_1d(Q, P, DzQ, DzP, alpha
 %  This file is distributed under the terms of the MIT License.
 
 
-P2 = P.^2;
-if alpha == 2
-    % Recover the unregularized quadratic kinetic energy exactly.
-    Pdelta = P2;
-    kineticScale = ones(size(P));
-else
-    Pdelta = P2 + delta^2;
-    kineticScale = Pdelta.^((alpha-2)/2);
-end
+[T, DQ, D2T] = kinetic_delta_1d(P, alpha, delta);
+[V, DV, D2V] = potential_1d(Q);
 
-[V, DV, D2V] = potential(Q);
-
-T = Pdelta.^(alpha/2) / alpha;
-DQ = kineticScale .* P;
 DP = -DV;
 DS = P .* DQ - T - V;
-
-if alpha == 2
-    D2T = ones(size(P));
-else
-    D2T = kineticScale .* (1 + (alpha - 2) * P2 ./ Pdelta);
-end
 
 DtDzQ = DzP .* D2T;
 DtDzP = -DzQ .* D2V;

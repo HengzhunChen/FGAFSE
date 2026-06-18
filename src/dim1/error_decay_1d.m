@@ -60,9 +60,10 @@ function error_decay_1d(alpha, vepsExp, right_x, finalTime, initWave, potential,
 %
 % We should choose proper parameters(mesh strategy), especially their relation
 % with respect to veps.
-% For err_odes, since we use 4-th order Runge-Kutta method, 
+% For err_odes, RK4 has fourth-order global accuracy, while the symplectic
+% Stormer-Verlet solver has second-order global accuracy.
 %
-%     err_odes = O(dt^5)
+%     err_odes = O(dt^4) for RK4, O(dt^2) for Stormer-Verlet
 %
 % thus, we can take dt = 1e-3 or even dt = 1e-2.
 % For err_init, since we set dx = veps, it will get smaller whenever veps get
@@ -78,6 +79,10 @@ end
 if nargin < 9 || isempty(deltaPower)
     deltaPower = 1;
 end
+
+% FGA ODE solver: 'symplectic' or 'rk4'.
+% solver = 'symplectic';
+solver = 'rk4';
 
 nalpha = length(alpha);  % number of alpha to test
 nveps = length(vepsExp);  % number of veps to test
@@ -112,7 +117,8 @@ for i = 1 : nalpha
         % FGA method, display error of initial decompsition
         timer_FGA = tic;
         delta = veps ^ deltaPower;
-        [w, x_w] = FGA1d(alpha(i), vepsExp(j), finalTime, right_x, initWave, potential, delta);
+        [w, x_w] = FGA1d(alpha(i), vepsExp(j), finalTime, right_x, ...
+            initWave, potential, delta, solver);
         time_FGA(i, j) = toc(timer_FGA);
         fprintf('FGA1d time: %f seconds\n', time_FGA(i, j));
 
