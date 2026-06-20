@@ -40,69 +40,54 @@ Qmesh2 = Qmesh1';
 Pmesh1 = [0: GKsize/2 - 1, -GKsize/2 : -1]' * ones(1, GKsize) * dp;
 Pmesh2 = Pmesh1';
 
-nGBMax = 2 ^ 20;  % 2^20 == 1048576
+nGBMax = 2 ^ 30;  % 2^20 == 1048576
 ntemp = min(nGBMax, np * np * nq * nq);
-A = zeros(ntemp, 1);
-Q = zeros(ntemp, 2);  % Q = [Q1, Q2]
-P = zeros(ntemp, 2);  % P = [P1, P2]    
-    
+
 % Compute integral with axes y1, y2 using FFT
-thresh = 1e-4;
-num = 0;
-for i = 0 : nydq : ny-1
-    for j = 0 : nydq : ny-1
-        % for each q(i), (il, ir) is kernel center at q(i)
+A_pq = zeros(np, np, nq, nq);
+for iq1 = 1 : nq
+    i = (iq1 - 1) * nydq;
+    for iq2 = 1 : nq
+        j = (iq2 - 1) * nydq;
+
+        % for each q(i, j), (il, ir) and (jl, jr) give the local kernel box
         il = max( i - GKsize/2, 0 ) + 1;  % index of left endpoint of y1
         ir = min( i + GKsize/2 - 1, ny - 1 ) + 1;  % index of right endpoint of y1
         jl = max( j - GKsize/2, 0 ) + 1;  % index of left endpoint of y2
         jr = min( j + GKsize/2 - 1, ny - 1 ) + 1;  % index of right endpoint of y2
-        
+
         ubox = zeros(GKsize, GKsize);
-        ubox( (il : ir) - i + GKsize/2, (jl : jr) - j + GKsize/2 ) = u0(il : ir, jl: jr);  
-        % ir-il may not equal to GKsize
-        ubox1 = ubox .* Gk_filter;
+        ubox( (il : ir) - i + GKsize/2, (jl : jr) - j + GKsize/2 ) = u0(il : ir, jl: jr);
+        ubox = ubox .* Gk_filter;
+        ubox = fft2(ubox) * dy * dy;  % use FFT to help simulate the integral
 
-        u0Max = sum(sum( abs(u0(il: ir, jl: jr)).^2 )) * dy * dy;
-        if u0Max <= 1e-7
-            s0 = 1;
-        else
-            s0 = u0Max / max(1e-7, sum(sum( abs(ubox1).^2 )) * dq * dq);
-        end
-        scal = max(s0, 1);
-        
-        ubox = fft2(ubox1) * dy * dy;  % use FFT to help simulate the integral
-
-        psi = 2 * ubox * dq * dq * dp *dp / ((2*pi*veps) ^ 3);  % 2 comes from a(0,q,p)
+        psi = 2 * ubox * dq * dq * dp * dp / ((2*pi*veps) ^ 3);  % 2 comes from a(0,q,p)
         psi = psi .* exp( 1i / veps * Pmesh1 * GKsize * dy / 2 ) ...
                   .* exp( 1i / veps * Pmesh2 * GKsize * dy / 2 );
         % with fft we sum j from 0 to N-1, we change back by adding N/2 to j
 
-        iq1 = i / nydq + 1;  % index of q1
-        iq2 = j / nydq + 1;  % index of q2
-        if iq1 > nq || iq2 > nq
-            break;
-        end
-        
-        psiM = max( max(abs(psi), [], 'all') * thresh, 1e-7 );
-
-        index = ( abs(psi) >= psiM * scal );
-        length = sum(sum(index));
-        if (num + length) > ntemp
-            error("Exceed the maximum beam number ...");
-        end
-        A(num + 1 : num + length) = psi(index);
-        Q(num + 1 : num + length, 1) = Qmesh1(iq1, iq2);
-        Q(num + 1 : num + length, 2) = Qmesh2(iq1, iq2);
-        P(num + 1 : num + length, 1) = Pmesh1(index);
-        P(num + 1 : num + length, 2) = Pmesh2(index);
-        num = num + length;
+        A_pq(:, :, iq1, iq2) = psi;
     end
 end
 
-nGB = num;
-A = A(1 : nGB);
-Q = Q(1 : nGB, :);
-P = P(1 : nGB, :);
+% Set a threshold to discard small values
+threshold = 1e-5;
+
+AM = max(abs(A_pq), [], 'all') * threshold;
+index = abs(A_pq) >= AM;
+
+nGB = sum(index, 'all');  % number of Gaussian beams
+if nGB > ntemp
+    error("Exceed the maximum beam number ...");
+end
+
+A = A_pq(index);
+A = A(:);
+
+[ip1, ip2, iq1, iq2] = ind2sub(size(A_pq), find(index));
+idP = sub2ind([np, np], ip1, ip2);
+Q = [(iq1 - 1) * dq, (iq2 - 1) * dq];
+P = [Pmesh1(idP), Pmesh2(idP)];
 S = zeros(nGB, 1);
 
 
