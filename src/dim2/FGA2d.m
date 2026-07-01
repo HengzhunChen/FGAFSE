@@ -38,7 +38,7 @@ if nargin < 8 || isempty(solver)
 end
 switch solver
     case 'rk4'
-        dt = 1e-2;
+        dt = 1e-3;
     case {'symplectic', 'stormer-verlet'}
         dt = 1e-3;
 end
@@ -50,7 +50,7 @@ dy = dx;  % mesh size of y1, y2 axis, use same mesh size for x and y
 ny = nx;  % number of mesh grids of y1, y2
 
 % number of y grid included in each stepsize of q, nydq := ny / dq, dq := ny * nydq
-nydq = floor( 2^(-vepsExp/2) / 2 );
+nydq = max(1, floor( 2^(-vepsExp/2) / 2 ));
 % numer of points included in a Gaussian kernel
 kernelSize = floor( 2^(-vepsExp/2) ) * 2^3;
 
@@ -90,5 +90,5 @@ evalPotential = @(Q) potential_2d(Q(:, 1), Q(:, 2));
     dt, finalTime, odes, solver, evalKinetic, evalPotential);
 
 ww = wave_reconstruction_2d(veps, A, S, Q, P, nGB, dx, nx, kernelSize);
-    
+
 end

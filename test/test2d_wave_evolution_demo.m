@@ -16,15 +16,15 @@ cd ./test
 % ------------------------------------------------------------
 alpha = 1.1;
 vepsExp = -6;
-right_x = 3;
-final_time = 5;
+right_x = 8;
+final_time = 6;
 deltaPower = 1;
 
 veps = 2^vepsExp;
 dx = veps;
 dtTSSA = veps^2;
 dtFGA = 1e-2;
-delta = veps^deltaPower;  % TODO
+delta = veps^deltaPower;
 frame_dt = 0.05;
 ntTSSA = floor(final_time / dtTSSA + 1e-6);
 actualTSSAFinalTime = ntTSSA * dtTSSA;
@@ -326,14 +326,14 @@ end
 % ------------------------------------------------------------
 
 function u0 = initWavefun(X, Y, veps)
-    r = sqrt( (X - 1.5).^2 + (Y - 1.5).^2 );
+    r = sqrt( (X - 4).^2 + (Y - 4).^2 );
     u0 = sqrt(128 / pi) * exp(-64 * r.^2) ...
         .* exp(1i * (Y - 1) / veps);
 end
 
 function [V, DV, D2V] = potentialfun(Q1, Q2)
-    a = 1;
-    b1 = 1.5; b2 = 1.5;
+    a = 0.1;
+    b1 = 4; b2 = 4;
     V = a * ((Q1 - b1).^2 + (Q2 - b2).^2);
     DV = 2 * a * [Q1 - b1, Q2 - b2];
     D2V = repmat(2 * a * [1, 0, 0, 1], size(Q1));

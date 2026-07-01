@@ -20,8 +20,8 @@ figureName = './L2err_alpha_1to2.png';
 useCachedTSSA = true;
 
 % % Demonstration of 1 < alpha < 2
-right_x = 3;
-final_time = 2;
+right_x = 8;
+final_time = 5;
 alpha = [1.1, 1.3, 1.5, 1.7, 1.9];
 vepsExp = [-6, -7, -8, -9, -10];
 error_decay_1d(alpha, vepsExp, right_x, final_time, @initWave, @potential, ...
@@ -45,7 +45,7 @@ function u0 = initWave(x, veps)
 % inputs:
 %       veps -- scaled Planck constant 
     beta = 1;
-    u0 = (128 / pi)^(1/4) * exp(-64 * (x - 1.5).^2) ...
+    u0 = (128 / pi)^(1/4) * exp(-64 * (x - 4).^2) ...
         .* exp(1i / veps * beta * x);
 end
 
@@ -58,8 +58,8 @@ function [V, DV, D2V] = potential(Q)
 %        V = V(Q)    potential value 
 %        DV = V'(Q)   1st derivative of V
 %        D2V = V''(Q)  2nd derivative of V
-    a = 1;
-    b = 1.5;
+    a = 0.1;
+    b = 4;
     V = a * (Q - b).^2;
     DV = 2 * a * (Q - b);
     D2V = 2 * a;

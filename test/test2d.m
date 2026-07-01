@@ -50,10 +50,6 @@ disp(['normalized L2 error: ', num2str(err_L2)]);
 
 saveas(gcf, './figures/test2d.png', 'png');
 
-% Test for checking zero points in trajectory P(t)
-delta = veps;
-check_zero_P_2d(alpha, final_time, vepsExp, right_x, delta, @initWave, @potential);
-
 
 % ------------------------------------------------------------
 

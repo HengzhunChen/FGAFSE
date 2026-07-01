@@ -20,10 +20,10 @@ figureName = './L2err_alpha_1to2.png';
 useCachedTSSA = false;
 
 % % Demonstration of 1 < alpha < 2
-right_x = 2;
-final_time = 2;
+right_x = 8;
+final_time = 5;
 alpha = [1.1, 1.3, 1.5, 1.7, 1.9];
-vepsExp = [-6, -7, -8, -9];
+vepsExp = [-5, 6, -7, -8];
 error_decay_2d(alpha, vepsExp, right_x, final_time, @initWave, @potential, ...
                figureName, useCachedTSSA, deltaPower);
 
@@ -38,8 +38,8 @@ function u0 = initWave(X, Y, veps)
 %       X, Y -- mesh samples
 %       veps -- scaled Planck constant 
     
-    r = sqrt( (X - 0.5).^2 + (Y - 0.5).^2 );
-    u0 = exp( -(r.^2) * 64 ) / (pi / 64) .* exp( 1i * (Y - 0.5) / veps);
+    r = sqrt( (X - 4).^2 + (Y - 4).^2 );
+    u0 = sqrt(128 / pi) * exp(-64 * r.^2) .* exp(1i * (Y - 1) / veps);
 
 end
 
@@ -55,11 +55,11 @@ function [V, DV, D2V] = potential(Q1, Q2)
 %        D2V -- [DV_11, DV_12, DV_21, DV_22]
 %               2nd partial derivatives of V w.r.t q1, q1
     
-    V = ((Q1 - 0.5).^2 + (Q2 - 0.5).^2) / 2;
-    DV_1 = Q1 - 0.5;
-    DV_2 = Q2 - 0.5;    
-    DV = [DV_1, DV_2];
-    D2V = repmat([1, 0, 0, 1], size(Q1));
+    a = 0.1;
+    b1 = 4; b2 = 4;
+    V = a * ((Q1 - b1).^2 + (Q2 - b2).^2);
+    DV = 2 * a * [Q1 - b1, Q2 - b2];
+    D2V = repmat(2 * a * [1, 0, 0, 1], size(Q1));
 
     % V = 10;
     % DV_1 = zeros(size(Q1));
