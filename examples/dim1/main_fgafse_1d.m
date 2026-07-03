@@ -12,9 +12,12 @@ cd ./examples/dim1
 
 % % Power k in delta = veps ^ k. The default used by FGA1d is k = 1.
 deltaPower = 1;
-figureName = './L2err_alpha_1to2.png';
+figureName = './L2err_alpha_1to2.eps';
+alpha = [1.1, 1.3, 1.5, 1.7, 1.9];
+
 % deltaPower = 7/12;
-% figureName = './L2err_alpha_1to2_k_7div12.png';
+% figureName = './L2err_alpha_1to2_k_7div12.eps';
+% alpha = [1.75, 1.8, 1.85, 1.9, 1.95];
 
 % Set false to recompute and overwrite TSSA data after changing its setup.
 useCachedTSSA = true;
@@ -22,7 +25,6 @@ useCachedTSSA = true;
 % % Demonstration of 1 < alpha < 2
 right_x = 8;
 final_time = 5;
-alpha = [1.1, 1.3, 1.5, 1.7, 1.9];
 vepsExp = [-6, -7, -8, -9, -10];
 error_decay_1d(alpha, vepsExp, right_x, final_time, @initWave, @potential, ...
                figureName, useCachedTSSA, deltaPower);

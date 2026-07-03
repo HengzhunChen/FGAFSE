@@ -49,7 +49,7 @@ nx = floor( (right_x - 0) / dx);
 dy = dx;  % use the same mesh size for x and y
 ny = nx;
 
-% number of y grid included in each stepsize of q, nydq := ny / nq, dq := dy * nqdq
+% number of y grid included in each stepsize of q, nydq := ny / nq, dq := dy * nydq
 nydq = floor( 2^(-vepsExp/2) / 2 );  
 % number of points included in a Gaussian kernel
 kernelSize = floor( 2^(-vepsExp/2) ) * 2^4;

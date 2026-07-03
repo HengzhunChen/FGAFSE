@@ -246,12 +246,11 @@ save("L2_error.mat", "err_L2", "time_FGA", "time_TSSA");
 % --------------------------------------
 
 % Fix alpha to plot the relation between log(error) and log(veps),
-% hopefully, error = O(veps ^ r), find out r
+% hopefully, error = O(veps ^ r), find out r.
 mylinestyle = ["-*", "-o", "-^", "-square", "-diamond"];
 figure;
-set(gca, 'Fontsize', 14)
 hold on
-box on 
+box on
 grid on
 
 p1 = zeros(nalpha, 2);  % coefficents of ployfit
@@ -262,11 +261,13 @@ for i = 1 : nalpha
     leg_str{i} = ['$\alpha=$', num2str(alpha(i)), ', slope: ', num2str(p1(i, 1))];
 end
 
-txt_x = xlabel("$-\log_2(\varepsilon)$");
-txt_y = ylabel("$\log_2$($L^2$ error)");
+txt_x = xlabel("$-\log_2(\varepsilon)$", 'FontSize', 15);
+txt_y = ylabel("$\log_2$($L^2$ error)", 'FontSize', 15);
 set(txt_x, "Interpreter", "latex")
 set(txt_y, "Interpreter", "latex")
-legend(leg_str, "Interpreter", "latex");
+set(gca, 'FontSize', 14, 'Box', 'on', 'TickDir', 'out');
+legend(leg_str, 'Interpreter', 'latex', 'FontSize', 14, ...
+    'Box', 'on', 'Location', 'best');
 % title(['L^2 error with final time T = ', num2str(finalTime)]);
 hold off
 
