@@ -1,4 +1,4 @@
-function [w, x] = FGA1d(alpha, vepsExp, finalTime, right_x, initWavefun, potential_1d, delta, solver)
+function [w, x] = FGA1d(alpha, vepsExp, finalTime, right_x, initWavefun, potential_1d, delta, solver, dt)
 % FGA1D Solver for 1-dim fractional Schrodinger equation with high frequency
 % wave using frozen Gaussian approximation (FGA) method.
 %    Inputs:
@@ -16,6 +16,8 @@ function [w, x] = FGA1d(alpha, vepsExp, finalTime, right_x, initWavefun, potenti
 %        delta       -- regularization parameter
 %                       default: delta = veps
 %        solver      -- ODE solver: 'rk4' (default) or 'symplectic'
+%        dt          -- optional maximum ODE step size; defaults to 5e-4 for
+%                       RK4 and 1e-3 for the symplectic solver
 %    Outputs:
 %       x -- samples on [0, right_x] 
 %       w -- solution at (x, finalTime)
@@ -36,11 +38,17 @@ end
 if nargin < 8 || isempty(solver)
     solver = 'rk4';
 end
+solver = validatestring(solver, {'rk4', 'symplectic', 'stormer-verlet'});
 switch solver
     case 'rk4'
-        dt = 1e-3;
+        defaultDt = 1e-3;
     case {'symplectic', 'stormer-verlet'}
-        dt = 1e-3;
+        defaultDt = 1e-3;
+end
+if nargin < 9 || isempty(dt)
+    dt = defaultDt;
+elseif ~isnumeric(dt) || ~isscalar(dt) || ~isfinite(dt) || dt <= 0
+    error('FGAFSE:InvalidTimeStep', 'dt must be a finite positive scalar.');
 end
 
 % Setup mesh grid

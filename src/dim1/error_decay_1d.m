@@ -1,4 +1,4 @@
-function error_decay_1d(alpha, vepsExp, right_x, finalTime, initWave, potential, figName, useCachedTSSA, deltaPower)
+function error_decay_1d(alpha, vepsExp, right_x, finalTime, initWave, potential, figName, useCachedTSSA, deltaPower, fgaDt)
 % ERROR_DECAY_1D function to analyze the error decay rate of FGA for 1-dim
 % fractional Schrodinger equation with high-frequency wave, use TSSA method as
 % ground state.
@@ -18,6 +18,8 @@ function error_decay_1d(alpha, vepsExp, right_x, finalTime, initWave, potential,
 %                         false recomputes and overwrites saved results
 %        deltaPower -- power k in delta = veps ^ k
 %                      default: deltaPower = 1
+%        fgaDt -- optional FGA ODE maximum step size; default is selected by
+%                 FGA1d according to the solver
 %
 %    See also FGA1d, TSSA1d.
 
@@ -79,6 +81,9 @@ end
 if nargin < 9 || isempty(deltaPower)
     deltaPower = 1;
 end
+if nargin < 10
+    fgaDt = [];
+end
 
 % FGA ODE solver: 'symplectic' or 'rk4'.
 % solver = 'symplectic';
@@ -118,7 +123,7 @@ for i = 1 : nalpha
         timer_FGA = tic;
         delta = veps ^ deltaPower;
         [w, x_w] = FGA1d(alpha(i), vepsExp(j), finalTime, right_x, ...
-            initWave, potential, delta, solver);
+            initWave, potential, delta, solver, fgaDt);
         time_FGA(i, j) = toc(timer_FGA);
         fprintf('FGA1d time: %f seconds\n', time_FGA(i, j));
 
@@ -274,9 +279,12 @@ hold off
 if isempty(figName)
     figName = './L2_err_veps.png';
 end
-if contains(figName, "eps")
+[figFolder, figBase, figExt] = fileparts(figName);
+if strcmpi(figExt, '.eps')
     saveas(gcf, figName, 'epsc');
-    figName = replace(figName, "eps", "png");
+    figName = fullfile(figFolder, [figBase, '.png']);
+elseif isempty(figExt)
+    figName = fullfile(figFolder, [figBase, '.png']);
 end
 saveas(gcf, figName, 'png');
 
