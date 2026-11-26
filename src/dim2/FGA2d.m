@@ -1,4 +1,4 @@
-function [ww, xx] = FGA2d(alpha, vepsExp, finalTime, right_x, initWave, potential_2d, delta, solver)
+function [ww, xx] = FGA2d(alpha, vepsExp, finalTime, right_x, initWave, potential_2d, delta, solver, dt)
 % FGA2D Solver for 2-dim fractional Schrodinger equation with high frequency
 % wave using frozen Gaussian approximation (FGA) method.
 %     Inputs:
@@ -15,6 +15,7 @@ function [ww, xx] = FGA2d(alpha, vepsExp, finalTime, right_x, initWave, potentia
 %         delta       -- regularization parameter
 %                        default: delta = veps
 %         solver      -- ODE solver: 'rk4' (default) or 'symplectic'
+%         dt          -- optional maximum ODE step size; default 1e-3
 %     Outputs:
 %         xx -- coordinates of x1 axis on 2 dimension mesh grid(i.e., matrix)
 %               coordinates of x2 axis is xx';
@@ -36,11 +37,17 @@ end
 if nargin < 8 || isempty(solver)
     solver = 'rk4';
 end
+solver = validatestring(solver, {'rk4', 'symplectic', 'stormer-verlet'});
 switch solver
     case 'rk4'
-        dt = 1e-3;
+        defaultDt = 1e-3;
     case {'symplectic', 'stormer-verlet'}
-        dt = 1e-3;
+        defaultDt = 1e-3;
+end
+if nargin < 9 || isempty(dt)
+    dt = defaultDt;
+elseif ~isnumeric(dt) || ~isscalar(dt) || ~isfinite(dt) || dt <= 0
+    error('FGAFSE:InvalidTimeStep', 'dt must be a finite positive scalar.');
 end
 
 % Setup mesh grid
